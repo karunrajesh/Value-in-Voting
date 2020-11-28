@@ -14,9 +14,9 @@ library(ggplot2)
 ```
 
 ```{r}
-presidential <- read.csv("1976-2016-president.csv")
-senate <- read.csv("1976-2018-senate.csv")
-context <- read.csv("election-context-2018.csv")
+presidential <- read.csv("Data/1976-2016-president.csv")
+senate <- read.csv("Data/1976-2018-senate.csv")
+context <- read.csv("Data/election-context-2018.csv")
 #Get expenditures from web scraping
 #Start doing initial analyses with the data
 # Analysis 1: Demographics
