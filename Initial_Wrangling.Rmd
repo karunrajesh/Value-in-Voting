@@ -27,9 +27,124 @@ context <- read.csv("Data/election-context-2018.csv")
 
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+```{r}
+#Analysis 1
+presidential <- read.csv("Data/1976-2016-president.csv")
+senate <- read.csv("Data/1976-2018-senate.csv")
+context <- read.csv("Data/election-context-2018.csv")
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+a <- aggregate(-county ~ state, data = context, mean)
+a <- context %>%
+  group_by(state) %>%
+  select(-county) %>%
+  summarise_each(funs(sum))
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+#Voter Turnout Over Time
+senate_turnout <- senate %>%
+  group_by(year, state) %>%
+  filter(row_number()==1) %>%
+  select(year, state, totalvotes)
+presidential_turnout <- presidential %>%
+  group_by(year, state) %>%
+  filter(row_number()==1) %>%
+  select(year, state, totalvotes)
 
+#Margins of Victory
+margin_pres <- presidential %>%
+  group_by(year,state) %>%
+  arrange(desc(candidatevotes), .by_group = TRUE)
+  filter(row_number() %in% c(1,2)) %>%
+  select(year, state, candidate, candidatevotes, totalvotes, party) %>%
+  summarize(margin = mean((candidatevotes[1]-candidatevotes[2])/totalvotes), party = party[1])
+
+margin_sen <- senate %>%
+  group_by(year,state) %>%
+  arrange(desc(candidatevotes), .by_group = TRUE) %>% 
+  filter(row_number() %in% c(1,2)) %>%
+  select(year, state, candidate, candidatevotes, totalvotes, party) %>%
+  summarize(margin = mean((candidatevotes[1]-candidatevotes[2])/totalvotes), party = party[1])
+
+# Switching Parties
+parties_pres <- presidential %>%
+  group_by(year,state) %>%
+  arrange(desc(candidatevotes), .by_group = TRUE) %>%
+  filter(row_number() == 1) %>%
+  select(year, state, candidate, party)
+# Possibly list how many times a state switched over time
+parties_sen <- senate %>%
+  group_by(year,state) %>%
+  arrange(desc(candidatevotes), .by_group = TRUE) %>%
+  filter(row_number() == 1) %>%
+  select(year, state, candidate, party)
+
+#Get expenditures from web scraping
+#Start doing initial analyses with the data
+# Analysis 1: Demographics
+# Analysis 2: Value in Presidential Voting
+# Analysis 3: Value in Senate Voting
+# Regression: Predict number of votes for winning candidate given data
+# ML Prediction: Put in demographic characteristic and output value?
+# Evaluate average voting time and its value
+```
+
+
+```{r}
+# Web Scraping
+library(rvest)
+library(tabulizer)
+turl <- "https://www.thebalance.com/how-trump-amended-obama-budget-4128986"
+h   <- read_html(url)
+tab <- h %>% html_nodes("table")
+try <- h %>% html_nodes("table") %>% .[1]
+budget_comp <- try %>% html_table %>% .[[1]] 
+
+url_2013 <- "https://www.thebalance.com/fy-2013-u-s-federal-budget-and-spending-3306319"
+h1 <- read_html(url_2013)
+try_2013 <- h1 %>% html_nodes("table") %>% .[2]
+budget_2013 <- try_2013 %>% html_table %>% .[[1]] 
+
+clean_table <- function(df){
+  rownames(df) <- df[,1]
+  df[,1] <- NULL
+  colnames(df) <- df[1,]
+  df <- df[-1,]
+} 
+budget_2013 <- clean_table(budget_2013)
+budget_comp <- clean_table(budget_comp)
+
+# Location of WARN notice pdf file
+location <- 'https://www.govinfo.gov/content/pkg/BUDGET-2009-BUD/pdf/BUDGET-2009-BUD-31.pdf'
+
+# Extract the table
+out <- extract_tables(location)
+df <- out[[4]]
+final <- as.data.frame(df)
+final <- final[-c(1:5),]
+final[,c(5:7)] <- NULL
+rows <- as.character(final[,1])
+final[,1] <- NULL
+colnames(final) <- c("2001", "2008", "2009")
+final_f <- mutate_all(final, function(x) as.numeric(as.character(x)))
+rownames(final_f) = str_match(rows, "^(.*?)\\.")[,2]
+
+```
+
+
+```{r}
+#Adapted from: https://slate.com/news-and-politics/2016/11/here-are-the-chances-your-vote-matters.html
+influence = data.frame(states = c(state.abb), 
+                       chance = c(1/7e9,1/100e6,1/40e6, 1/3e9,
+                                 1/7e9,1/1e6, 1/40e6, 1/300e6,
+                                 1/3e6, 1/60e6, 1/1e9, 1/10e9,
+                                 1/1e9, 1/3e9, 1/30e6, 1/1e9,
+                                 1/8e9, 1/5e9, 1/5e6, 1/10e9,
+                                 1/4e9, 1/3e6, 1/10e6, 1/1e9,
+                                 1/1e9, 1/2e9, 1/4e9, 1/2e6,
+                                 1/1e6, 1/400e6, 1/3e6, 1/3e9,
+                                 1/3e6, 1/4e9, 1/20e6, 1/30e9,
+                                 1/40e6, 1/2e6, 1/30e6, 1/100e6,
+                                 1/3e9, 1/3e9, 1/1e9, 1/2e9,
+                                 1/10e9, 1/10e6, 1/200e6, 1/9e9,
+                                 1/2e6, 1/30e9))
+
+```
