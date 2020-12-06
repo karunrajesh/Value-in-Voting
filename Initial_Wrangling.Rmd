@@ -89,19 +89,25 @@ parties_sen <- senate %>%
 
 
 ```{r}
-
+# Contains the mandatory federal spending per year per agency
 budg_all <- read.csv("Data/budget_amount.csv")
 budg_all <- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE)
 colnames(budg_all) = budg_all[2,]
 rownames(budg_all) = budg_all[,1]
 budg_all = budg_all[-c(1,2,33,34),-1]
-budg <- mutate_all(budg_all, function(x) as.numeric(x))
-trump <- c("2017", "2018", "2019", "`2020 estimate`")
-obama_2nd <- as.character(c(2013:2016))
-obama_1st <- as.character()
+cols <- colnames(budg_all)
+rows <- rownames(budg_all)
+budg = as.data.frame(lapply(budg_all, function(x) as.numeric(gsub(",","",x))))
+colnames(budg) <- cols
+rownames(budg) <- rows
+budg <- budg[,-c(1,2)]
+budg_admin <- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE)))
 
-budg_perc <- read.csv("Data/budget_percentage.csv")
-# Web Scraping
+colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])) - 1, 2020)
+
+#########################
+
+# Web Scraping, Potentially not needed
 library(rvest)
 library(tabulizer)
 clean_table <- function(df){
@@ -179,4 +185,8 @@ influence = data.frame(states = c(state.abb),
                                  1/10e9, 1/10e6, 1/200e6, 1/9e9,
                                  1/2e6, 1/30e9))
 
+
+va <- influence %>%
+  filter(states == "VA")
+va_example <- budg_admin * va$chance * 1e6
 ```
