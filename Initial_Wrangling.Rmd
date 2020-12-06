@@ -89,9 +89,42 @@ parties_sen <- senate %>%
 
 
 ```{r}
+
+budg_all <- read.csv("Data/budget_amount.csv")
+budg_all <- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE)
+colnames(budg_all) = budg_all[2,]
+rownames(budg_all) = budg_all[,1]
+budg_all = budg_all[-c(1,2,33,34),-1]
+budg <- mutate_all(budg_all, function(x) as.numeric(x))
+trump <- c("2017", "2018", "2019", "`2020 estimate`")
+obama_2nd <- as.character(c(2013:2016))
+obama_1st <- as.character()
+
+budg_perc <- read.csv("Data/budget_percentage.csv")
 # Web Scraping
 library(rvest)
 library(tabulizer)
+clean_table <- function(df){
+  rownames(df) <- df[,1]
+  df[,1] <- NULL
+  colnames(df) <- df[1,]
+  df <- df[-1,]
+} 
+get_table <- function(url, i){
+  h1 <- read_html(url)
+  try <- h1 %>% html_nodes("table") %>% .[i]
+  budget <- try %>% html_table %>% .[[1]] 
+  budget <- clean_table(budget)
+  return(budget)
+}
+
+budget_2020 <- get_table("https://www.thebalance.com/fy-2020-federal-budget-summary-of-revenue-and-spending-4797868", 1)
+
+
+blnk <- read_html("https://www.thebalance.com/fy-2019-federal-budget-summary-of-revenue-and-spending-4589082")
+hi <- blnk %>% html_nodes("table")
+
+
 turl <- "https://www.thebalance.com/how-trump-amended-obama-budget-4128986"
 h   <- read_html(url)
 tab <- h %>% html_nodes("table")
@@ -103,12 +136,7 @@ h1 <- read_html(url_2013)
 try_2013 <- h1 %>% html_nodes("table") %>% .[2]
 budget_2013 <- try_2013 %>% html_table %>% .[[1]] 
 
-clean_table <- function(df){
-  rownames(df) <- df[,1]
-  df[,1] <- NULL
-  colnames(df) <- df[1,]
-  df <- df[-1,]
-} 
+
 budget_2013 <- clean_table(budget_2013)
 budget_comp <- clean_table(budget_comp)
 
@@ -128,6 +156,10 @@ final_f <- mutate_all(final, function(x) as.numeric(as.character(x)))
 rownames(final_f) = str_match(rows, "^(.*?)\\.")[,2]
 
 ```
+
+
+
+
 
 
 ```{r}
