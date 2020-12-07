@@ -190,3 +190,36 @@ va <- influence %>%
   filter(states == "VA")
 va_example <- budg_admin * va$chance * 1e6
 ```
+
+
+```{r Regression}
+# 3 variables: Year, Sector, State
+library(caret)
+#Setting up Data:
+yrs = c(colnames(budg_admin))
+sector = rownames(budg_admin)
+state = state.abb
+y = stack(budg_admin)
+y$values = y$values * 1e6
+output = data.frame(tcrossprod(y$values,influence$chance))
+colnames(output) = state
+full_set = stack(output)
+full_set <- full_set %>%
+  group_by(ind) %>%
+  mutate(years = as.numeric(rep(yrs,each = length(sector)))) %>%
+  mutate(sectors = rep(sector, length(yrs)))
+
+vars <- c("years")
+featurePlot(x = full_set[, vars], 
+            y = full_set$values, 
+            plot = "scatter",
+            type = c("p", "smooth"),
+            span = .5,
+            layout = c(3, 1))
+
+mod <- lm(values ~ ind + year + sectors, data = full_set)
+summary(mod)
+residuals(mod)
+```
+
+
