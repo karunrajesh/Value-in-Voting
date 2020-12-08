@@ -11,6 +11,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
+library(reshape2)
 ```
 
 ```{r}
@@ -101,7 +102,7 @@ overall_turnout %>%
   geom_line() +
   geom_point()
 
-#Voter turnout by State
+#Voter turnout by State, could have user select state
 presidential_turnout %>%
   filter(state == "Virginia") %>%
   ggplot(aes(year,totalvotes)) + 
@@ -112,13 +113,40 @@ presidential_turnout %>%
 parties_pres %>%
   filter(state == "Virginia")
 
-# Margin of Victory
+# Margin of Victory, by state
 margin_pres %>% 
-  filter(state == "Virginia")
+  filter(state == "Virginia") %>%
+  ggplot(aes(year,margin)) + 
+  geom_line() +
+  geom_point(aes(colour = party), size = 5) +
+  scale_color_manual(values=c("blue", "red"))
 
-# Demographics, 2016 Election
+# Demographics, 2016 Election, show as table 
 demo <- context_state[,-c(2:22)]
-demo 
+demo <- demo %>%
+  filter(!state %in% c("Missouri", "Virginia", "South Dakota"))
+
+# Chance of influencing the election, based on 2012 results, # NEEDS INFLUENCE TABLE BELOW
+# Show 5-6 states
+influence$chance <- as.numeric(influence$chance)
+influence %>%
+  filter(state %in% c("AL", "NV", "NC", "VA", "WY")) %>%
+  ggplot(aes(states, chance)) +
+  geom_bar(stat="identity") 
+
+# Show value of vote, given state and department, # NEEDS INFLUENCE AND BUDG_ADMIN TABLE BELOW
+va <- influence %>%
+  filter(states == "VA")
+va_example <- budg_admin * va$chance * 1e6
+example <- va_example %>%
+  filter(rownames(va_example) %in% c("Department of Education", "Department of Transportation"))
+example <- as.data.frame(t(example))
+colnames(example) = c("Department of Education", "Department of Transportation")
+example$year <- rownames(example)
+example <- melt(example, id.vars=c("year"))
+example %>%
+  ggplot(aes(x=as.numeric(year), y=value, color=variable)) + geom_line() +
+  xlab("Year") + ylab("Value of Vote (in dollars)")
 
 ```
 
