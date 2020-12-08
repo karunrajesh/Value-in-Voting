@@ -10,7 +10,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 ```{r}
 library(tidyverse)
 library(ggplot2)
-
+library(dplyr)
 ```
 
 ```{r}
@@ -33,35 +33,35 @@ presidential <- read.csv("Data/1976-2016-president.csv")
 senate <- read.csv("Data/1976-2018-senate.csv")
 context <- read.csv("Data/election-context-2018.csv")
 
-a <- aggregate(-county ~ state, data = context, mean)
-a <- context %>%
+#a <- aggregate(-county ~ state, data = context, mean)
+context_state<- context %>%
   group_by(state) %>%
-  select(-county) %>%
-  summarise_each(funs(sum))
+  dplyr::select(-county) %>%
+  summarise_each(funs(mean))
 
 #Voter Turnout Over Time
 senate_turnout <- senate %>%
   group_by(year, state) %>%
   filter(row_number()==1) %>%
-  select(year, state, totalvotes)
+  dplyr::select(year, state, totalvotes)
 presidential_turnout <- presidential %>%
   group_by(year, state) %>%
   filter(row_number()==1) %>%
-  select(year, state, totalvotes)
+  dplyr::select(year, state, totalvotes)
 
 #Margins of Victory
 margin_pres <- presidential %>%
   group_by(year,state) %>%
-  arrange(desc(candidatevotes), .by_group = TRUE)
+  arrange(desc(candidatevotes), .by_group = TRUE) %>%
   filter(row_number() %in% c(1,2)) %>%
-  select(year, state, candidate, candidatevotes, totalvotes, party) %>%
+  dplyr::select(year, state, candidate, candidatevotes, totalvotes, party) %>%
   summarize(margin = mean((candidatevotes[1]-candidatevotes[2])/totalvotes), party = party[1])
 
 margin_sen <- senate %>%
   group_by(year,state) %>%
   arrange(desc(candidatevotes), .by_group = TRUE) %>% 
   filter(row_number() %in% c(1,2)) %>%
-  select(year, state, candidate, candidatevotes, totalvotes, party) %>%
+  dplyr::select(year, state, candidate, candidatevotes, totalvotes, party) %>%
   summarize(margin = mean((candidatevotes[1]-candidatevotes[2])/totalvotes), party = party[1])
 
 # Switching Parties
@@ -69,13 +69,15 @@ parties_pres <- presidential %>%
   group_by(year,state) %>%
   arrange(desc(candidatevotes), .by_group = TRUE) %>%
   filter(row_number() == 1) %>%
-  select(year, state, candidate, party)
+  dplyr::select(year, state, candidate, party)
 # Possibly list how many times a state switched over time
 parties_sen <- senate %>%
   group_by(year,state) %>%
   arrange(desc(candidatevotes), .by_group = TRUE) %>%
   filter(row_number() == 1) %>%
-  select(year, state, candidate, party)
+  dplyr::select(year, state, candidate, party)
+
+
 
 #Get expenditures from web scraping
 #Start doing initial analyses with the data
@@ -87,6 +89,38 @@ parties_sen <- senate %>%
 # Evaluate average voting time and its value
 ```
 
+
+```{r InitalPlots}
+overall_turnout <- presidential_turnout %>%
+  group_by(year) %>%
+  summarize(total = sum(totalvotes))
+
+# Overall Voter Turnout
+overall_turnout %>%
+  ggplot(aes(year,total)) + 
+  geom_line() +
+  geom_point()
+
+#Voter turnout by State
+presidential_turnout %>%
+  filter(state == "Virginia") %>%
+  ggplot(aes(year,totalvotes)) + 
+  geom_line() +
+  geom_point()
+
+# Show parties switching per state 
+parties_pres %>%
+  filter(state == "Virginia")
+
+# Margin of Victory
+margin_pres %>% 
+  filter(state == "Virginia")
+
+# Demographics, 2016 Election
+demo <- context_state[,-c(2:22)]
+demo 
+
+```
 
 ```{r}
 # Contains the mandatory federal spending per year per agency
