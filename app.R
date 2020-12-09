@@ -1,19 +1,10 @@
-# Homework #3 Shiny app
-# Due November 9, 2020 by 11:59pm EST
-
 library(shiny)
 library(tidyverse)
-library(forcats)
-library(dslabs)
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
-
 library(usmap)
-library(readr)
-library(lubridate)
-library(maps)
-library(stringr)
+
 
 us_states <- map_data("state") %>% mutate(state=region)
 presidential <- read.csv("Data/1976-2016-president.csv")
