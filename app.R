@@ -105,24 +105,36 @@ colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])
 state_choices <- unique(presidential_turnout$state)
 govagency_choices <- rownames(budg_admin)
 map_modes <- c('Race Result','Margins','Voter Turnout')
+
+color_scale_min <- c('Margins'= min(margin_pres$margin),'Voter Turnout'=min(presidential_turnout$totalvotes))
+color_scale_max <- c('Margins'= max(margin_pres$margin),'Voter Turnout'=max(presidential_turnout$totalvotes))
+
 agencies <- c("DOE","DOJ")
 
 ui <- fluidPage(
   theme = shinythemes::shinytheme("spacelab"),
+  titlePanel("Value of Voting"),
   tabsetPanel(
-    tabPanel("Election",
+    tabPanel("EDA",
              # US map plots
-             selectInput("mapmode","Map Mode",setNames(map_modes,map_modes)),
-             sliderInput("year","Choose year",
-                         value = 2000, min = 1976, 
-                         max = 2016,step=4,sep="",width='85%'
+             column(3,
+                radioButtons("mapmode","Select variable to display:",
+                             choices=map_modes
+                )
              ),
-             plotOutput(outputId = "election_map",height=700,width='100%'),
+             column(9,
+                sliderInput("year","Choose year",
+                            value = 2000, min = 1976, 
+                            max = 2016,step=4,sep="",width='85%'
+                ),
+                plotOutput(outputId = "election_map",height=500,width='100%')
+             ),
              selectizeInput("states_turnout","Select up to 6 states:",
                             choices=state_choices,
                             selected=c('California', 'Alabama', 'Michigan', 'Florida','Virginia'),
                             multiple = T,
-                            options = list(maxItems = 6)
+                            options = list(maxItems = 6),
+                            width='100%'
                             ),
              column(6,
                    plotOutput(outputId = "line_turnout",height=500,width='100%')
@@ -130,18 +142,19 @@ ui <- fluidPage(
              column(6,
                     plotOutput(outputId = "bar_influence",height=500,width='100%')
                     ),
+             h4("States Demographic"),
              tableOutput('table_demo'),
-             
              column(6,
                   selectInput("states_margin","Select state:",setNames(state_choices,state_choices)),
-                   plotOutput(outputId = "line_margin",height=500,width='100%')
-             ),
+                  plotOutput(outputId = "line_margin",height=500,width='100%')
+             ,align='center'),
              column(6,
                     selectizeInput("gov_agencies","Select up to 6 agencies:",
                                    choices=govagency_choices,
                                    selected=c("Department of Education", "Department of Transportation"),
                                    multiple = T,
-                                   options = list(maxItems = 6)
+                                   options = list(maxItems = 6),
+                                   width='100%'
                     ),
                     plotOutput(outputId = "line_votevalue",height=500,width='100%')
              ),
@@ -167,17 +180,29 @@ server <- function(input, output) {
     }
     )
 
+  
   output$election_map <- renderPlot({ 
-    mapdata() %>% ggplot(aes(x = long, y = lat, fill = fillcolor, group = group)) + 
+    p<- mapdata() %>% ggplot(aes(x = long, y = lat, fill = fillcolor, group = group)) + 
       geom_polygon(color = "white") + 
       coord_fixed(1.3) +
-      guides(fill = FALSE) + # do this to leave off the color legend 
+      ggtitle(input$mapmode) +
       theme(panel.grid.major = element_blank(), 
             panel.background = element_blank(),
             axis.title = element_blank(), 
             axis.text = element_blank(),
-            axis.ticks = element_blank()) +
-      ggtitle(input$mapmode)
+            axis.ticks = element_blank(),
+            text = element_text(size=15),
+            legend.position="bottom",
+            plot.title = element_text(hjust = 0.5)
+      ) 
+     if (input$mapmode %in% c('Margins','Voter Turnout')) {
+         p <- p + scale_fill_distiller(name=input$mapmode,
+                                  palette="Spectral",
+                                  trans="log10",
+                                  limits= c(color_scale_min[input$mapmode],color_scale_max[input$mapmode])
+             ) + theme(legend.key.width = unit(6,"lines"))
+      }
+      p
   })
   
   line_turnout_data <- reactive(presidential_turnout %>% filter(state %in% input$states_turnout)) 
@@ -185,14 +210,28 @@ server <- function(input, output) {
     line_turnout_data() %>%
       ggplot(aes(year,totalvotes,color=state)) + 
       geom_line() +
-      geom_point()
+      geom_point() +
+      ggtitle("Voter Turnout") + 
+      theme(text = element_text(size=15),
+            legend.position="bottom",
+            # center title
+            plot.title = element_text(hjust = 0.5)) +
+      # increase size of the marker inside the legend label
+      guides(colour = guide_legend(override.aes = list(size=5)))
   })
   
   bar_influence_data <- reactive(influence %>% filter(state %in% input$states_turnout))
   output$bar_influence <- renderPlot({ 
     bar_influence_data() %>%
-      ggplot(aes(state, chance)) +
-      geom_bar(stat="identity") 
+      ggplot(aes(state, chance,fill=state)) +
+      geom_bar(stat="identity") +
+      ggtitle("Chance of Flipping an Election") +
+      theme(text = element_text(size=15),
+            legend.position="bottom",
+            # center title
+            plot.title = element_text(hjust = 0.5)) +
+      # increase size of the marker inside the legend label
+      guides(colour = guide_legend(override.aes = list(size=9)))
   })
   
   table_demo_data <- reactive(demo %>% filter(state %in% input$states_turnout))
@@ -206,22 +245,34 @@ server <- function(input, output) {
       ggplot(aes(year,margin)) + 
       geom_line() +
       geom_point(aes(colour = party), size = 5) +
-      scale_color_manual(values=c("blue", "red"))
+      scale_color_manual(values=c("blue", "red")) +
+      ggtitle('Vote Margin') +
+      theme(text = element_text(size=15),
+            legend.position="bottom",
+            # center title
+            plot.title = element_text(hjust = 0.5))
   })
   
   
-  line_votevalue_data <- reactive(
-                                  (influence %>% filter(state == input$states_margin) %>% 
+  line_votevalue_data <- reactive((influence %>% filter(state == input$states_margin) %>% 
                                     .$chance * budg_admin *1e6) %>% 
                                     .[input$gov_agencies,] %>% 
                                     tibble::rownames_to_column("agency") %>%
                                     gather(year,budget,-agency)
-  )
+                                  )
   output$line_votevalue <- renderPlot({ 
     line_votevalue_data() %>%
-        ggplot(aes(x=as.numeric(year), y=budget, color=agency)) + 
-        geom_line() +
-        xlab("Year") + ylab("Value of Vote (in dollars)")
+      ggplot(aes(x=as.numeric(year), y=budget, color=agency)) + 
+      geom_line() +
+      xlab("Year") + 
+      ylab("Value of Vote (in dollars)") +
+      ggtitle('Value of Vote') +
+      theme(text = element_text(size=15),
+            legend.position="bottom",
+            # center title
+            plot.title = element_text(hjust = 0.5)) +
+      # increase size of the marker inside the legend label
+      guides(colour = guide_legend(override.aes = list(size=9)))
   })
 
   
