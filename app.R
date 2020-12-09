@@ -9,25 +9,19 @@ library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
 
+library(reshape2)
+
 library(usmap)
 library(readr)
 library(lubridate)
 library(maps)
 library(stringr)
 
-data(gapminder)
-
 us_states <- map_data("state") %>% mutate(state=region)
+presidential <- read.csv("Data/1976-2016-president.csv")
+context <- read.csv("Data/election-context-2018.csv")
+budg_all <- read.csv("Data/budget_amount.csv")
 
-us_states %>% ggplot(aes(x = long, y = lat, fill = region, group = group)) + 
-  geom_polygon(color = "white") + 
-  coord_fixed(1.3) +
-  guides(fill = FALSE) + # do this to leave off the color legend 
-  theme(panel.grid.major = element_blank(), 
-        panel.background = element_blank(),
-        axis.title = element_blank(), 
-        axis.text = element_blank(),
-        axis.ticks = element_blank())
 
 presidential_turnout <- presidential %>%
   group_by(year, state) %>%
@@ -37,16 +31,20 @@ presidential_turnout <- presidential %>%
 presidential_turnout_w_map <- presidential_turnout %>%
   mutate(state = tolower(state)) %>% left_join(us_states,by='state')
 
-pres_winner <- presidential %>%
-  group_by(year, state) %>%
-  filter(row_number()==1) %>%
-  dplyr::select(year,state,party)
+parties_pres <- presidential %>%
+  group_by(year,state) %>%
+  arrange(desc(candidatevotes), .by_group = TRUE) %>%
+  filter(row_number() == 1) %>%
+  dplyr::select(year, state, candidate, party)
 
-pres_winner_w_map <- pres_winner %>%
+parties_pres_w_map <- parties_pres %>%
   mutate(state = tolower(state)) %>% left_join(us_states,by='state')
 
 
-voter_turnout<- presidential_turnout_w_map %>% filter(year=='2016')
+overall_turnout <- presidential_turnout %>%
+  group_by(year) %>%
+  summarize(total = sum(totalvotes))
+
 
 margin_pres <- presidential %>%
   group_by(year,state) %>%
@@ -58,6 +56,54 @@ margin_pres_w_map <- margin_pres %>%
   mutate(state = tolower(state)) %>% left_join(us_states,by='state')
 
 
+context_state<- context %>%
+  group_by(state) %>%
+  dplyr::select(-county) %>%
+  summarise_each(funs(mean))
+demo <- context_state[,-c(2:22)]
+demo <- demo %>%
+  filter(!state %in% c("Missouri", "Virginia", "South Dakota"))
+
+
+state_name_to_abb <- setNames(state.name,state.abb)
+influence <- data.frame(state = c(state.abb), 
+                       chance = c(1/7e9,1/100e6,1/40e6, 1/3e9,
+                                  1/7e9,1/1e6, 1/40e6, 1/300e6,
+                                  1/3e6, 1/60e6, 1/1e9, 1/10e9,
+                                  1/1e9, 1/3e9, 1/30e6, 1/1e9,
+                                  1/8e9, 1/5e9, 1/5e6, 1/10e9,
+                                  1/4e9, 1/3e6, 1/10e6, 1/1e9,
+                                  1/1e9, 1/2e9, 1/4e9, 1/2e6,
+                                  1/1e6, 1/400e6, 1/3e6, 1/3e9,
+                                  1/3e6, 1/4e9, 1/20e6, 1/30e9,
+                                  1/40e6, 1/2e6, 1/30e6, 1/100e6,
+                                  1/3e9, 1/3e9, 1/1e9, 1/2e9,
+                                  1/10e9, 1/10e6, 1/200e6, 1/9e9,
+                                  1/2e6, 1/30e9)) %>%
+            mutate(state = recode(state,!!!state_name_to_abb))
+influence$chance <- as.numeric(influence$chance)
+
+
+
+budg_all <- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE)
+colnames(budg_all) = budg_all[2,]
+rownames(budg_all) = budg_all[,1]
+budg_all = budg_all[-c(1,2,33,34),-1]
+cols <- colnames(budg_all)
+rows <- rownames(budg_all)
+budg = as.data.frame(lapply(budg_all, function(x) as.numeric(gsub(",","",x))))
+colnames(budg) <- cols
+rownames(budg) <- rows
+budg <- budg[,-c(1,2)]
+budg_admin <- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE)))
+colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])) - 1, 2020)
+
+
+
+
+
+state_choices <- unique(presidential_turnout$state)
+govagency_choices <- rownames(budg_admin)
 map_modes <- c('Race Result','Margins','Voter Turnout')
 agencies <- c("DOE","DOJ")
 
@@ -66,21 +112,40 @@ ui <- fluidPage(
   tabsetPanel(
     tabPanel("Election",
              # US map plots
-             selectInput("mapmode","Mode",setNames(map_modes,map_modes)),
+             selectInput("mapmode","Map Mode",setNames(map_modes,map_modes)),
              sliderInput("year","Choose year",
                          value = 2000, min = 1976, 
                          max = 2016,step=4,sep="",width='85%'
              ),
              plotOutput(outputId = "election_map",height=700,width='100%'),
-             plotOutput(outputId = "scatter",height=700,width='100%')
+             selectizeInput("states_turnout","Select up to 6 states:",
+                            choices=state_choices,
+                            selected=c('California', 'Alabama', 'Michigan', 'Florida','Virginia'),
+                            multiple = T,
+                            options = list(maxItems = 6)
+                            ),
+             column(6,
+                   plotOutput(outputId = "line_turnout",height=500,width='100%')
+                   ),
+             column(6,
+                    plotOutput(outputId = "bar_influence",height=500,width='100%')
+                    ),
+             tableOutput('table_demo'),
              
-    ),
-    tabPanel("Government Expidenture",
-             # Treemap plot with year slider
-             plotOutput(outputId = "treemp",height=500,width='100%'),
-             # Line plot of budget over the years
-             selectInput("agency","Gov Agency",setNames(agencies,agencies)),
-             plotOutput(outputId = "line_expense",height=700,width='100%')
+             column(6,
+                  selectInput("states_margin","Select state:",setNames(state_choices,state_choices)),
+                   plotOutput(outputId = "line_margin",height=500,width='100%')
+             ),
+             column(6,
+                    selectizeInput("gov_agencies","Select up to 6 agencies:",
+                                   choices=govagency_choices,
+                                   selected=c("Department of Education", "Department of Transportation"),
+                                   multiple = T,
+                                   options = list(maxItems = 6)
+                    ),
+                    plotOutput(outputId = "line_votevalue",height=500,width='100%')
+             ),
+             
     ),
     tabPanel("Analysis",
              # Regression Output
@@ -98,11 +163,9 @@ server <- function(input, output) {
     } else if (input$mapmode == "Margins"){
       margin_pres_w_map %>% filter(year==input$year) %>% mutate(fillcolor=margin)
     } else {
-      pres_winner_w_map %>% filter(year==input$year) %>% mutate(fillcolor=party)
+      parties_pres_w_map %>% filter(year==input$year) %>% mutate(fillcolor=party)
     }
     )
-  
-  scatterdata <- reactive(margin_pres %>% left_join(presidential_turnout,by='state') %>% filter(year=year))
 
   output$election_map <- renderPlot({ 
     mapdata() %>% ggplot(aes(x = long, y = lat, fill = fillcolor, group = group)) + 
@@ -117,17 +180,48 @@ server <- function(input, output) {
       ggtitle(input$mapmode)
   })
   
-  output$scatter <- renderPlot({ 
-    
-    
+  line_turnout_data <- reactive(presidential_turnout %>% filter(state %in% input$states_turnout)) 
+  output$line_turnout <- renderPlot({ 
+    line_turnout_data() %>%
+      ggplot(aes(year,totalvotes,color=state)) + 
+      geom_line() +
+      geom_point()
   })
   
-  output$treemp <- renderPlot({ 
-    
+  bar_influence_data <- reactive(influence %>% filter(state %in% input$states_turnout))
+  output$bar_influence <- renderPlot({ 
+    bar_influence_data() %>%
+      ggplot(aes(state, chance)) +
+      geom_bar(stat="identity") 
   })
   
-  output$line_expense <- renderPlot({ 
-    
+  table_demo_data <- reactive(demo %>% filter(state %in% input$states_turnout))
+  output$table_demo <- renderTable({
+    table_demo_data()
+  })
+  
+  line_margin_data <- reactive(margin_pres %>%  filter(state ==input$states_margin)) 
+  output$line_margin <- renderPlot({ 
+    line_margin_data() %>%
+      ggplot(aes(year,margin)) + 
+      geom_line() +
+      geom_point(aes(colour = party), size = 5) +
+      scale_color_manual(values=c("blue", "red"))
+  })
+  
+  
+  line_votevalue_data <- reactive(
+                                  (influence %>% filter(state == input$states_margin) %>% 
+                                    .$chance * budg_admin *1e6) %>% 
+                                    .[input$gov_agencies,] %>% 
+                                    tibble::rownames_to_column("agency") %>%
+                                    gather(year,budget,-agency)
+  )
+  output$line_votevalue <- renderPlot({ 
+    line_votevalue_data() %>%
+        ggplot(aes(x=as.numeric(year), y=budget, color=agency)) + 
+        geom_line() +
+        xlab("Year") + ylab("Value of Vote (in dollars)")
   })
 
   
