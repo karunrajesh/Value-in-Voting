@@ -4,6 +4,7 @@ library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
 library(usmap)
+library(maps)
 
 
 us_states <- map_data("state") %>% mutate(state=region)
