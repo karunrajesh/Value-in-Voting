@@ -244,6 +244,7 @@ final <- final[,c(3,1,2)]
 colnames(final) <- c("Year", "State", "Turnout")
 final$Year <- as.numeric(final$Year)
 
+write.csv(final,"Data/2016_Turnout.csv",row.names=F)
 
 #other <- as.data.frame(out[[1]])
 
@@ -269,12 +270,22 @@ old_turnout <- data.frame(State = c("Minnesota", "Utah", "North Dakota", "Wiscon
 old_turnout$Year <- 1976
 old_turnout <- old_turnout[,c(3,1,2)]
 
+write.csv(old_turnout,"Data/1976_Turnout.csv",row.names=F)
 
 total_turnout <- rbind(total_turnout, old_turnout)
 ```
 
 
-
+```{r Electoral Votes}
+library(rvest)
+#Scrape historical number of electoral votes by state by year
+url <- "https://www.270towin.com/state-electoral-vote-history/"
+electoral_votes <- read_html(url) %>% html_nodes("table") %>% html_table %>% .[[1]] 
+electoral_votes <- electoral_votes %>% gather(year,nvotes,-1)
+names(electoral_votes) <- c('state','year','nvotes')
+electoral_votes <- electoral_votes %>% mutate(year=as.numeric(year)) %>% filter(year %in% seq(1976,2016,4))
+write.csv(electoral_votes,'Data/Electoral_Votes_by_State.csv',row.names=F)
+```
 
 
 
