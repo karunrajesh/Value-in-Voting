@@ -131,12 +131,12 @@ demo <- demo %>%
 influence$chance <- as.numeric(influence$chance)
 influence %>%
   filter(state %in% c("AL", "NV", "NC", "VA", "WY")) %>%
-  ggplot(aes(states, chance)) +
+  ggplot(aes(state, chance)) +
   geom_bar(stat="identity") 
 
 # Show value of vote, given state and department, # NEEDS INFLUENCE AND BUDG_ADMIN TABLE BELOW
 va <- influence %>%
-  filter(states == "VA")
+  filter(state == "VA")
 va_example <- budg_admin * va$chance * 1e6
 example <- va_example %>%
   filter(rownames(va_example) %in% c("Department of Education", "Department of Transportation"))
@@ -244,6 +244,7 @@ final <- final[,c(3,1,2)]
 colnames(final) <- c("Year", "State", "Turnout")
 final$Year <- as.numeric(final$Year)
 
+write.csv(final,"Data/2016_Turnout.csv",row.names=F)
 
 #other <- as.data.frame(out[[1]])
 
@@ -269,18 +270,37 @@ old_turnout <- data.frame(State = c("Minnesota", "Utah", "North Dakota", "Wiscon
 old_turnout$Year <- 1976
 old_turnout <- old_turnout[,c(3,1,2)]
 
+write.csv(old_turnout,"Data/1976_Turnout.csv",row.names=F)
 
 total_turnout <- rbind(total_turnout, old_turnout)
+
+
+# how im reading turnout in shiny app, 
+turnout <- read.csv("Data/Turnout.csv") %>%
+  filter(X %in% seq(1976, 2016, by = 4)) %>%
+  select(X, State, X.4) %>% 
+  rename(year=X,state=State, turnout=X.4)
+turnout_1976 <- read.csv("Data/1976_Turnout.csv")
+turnout_2016 <- read.csv("Data/2016_Turnout.csv") %>% mutate(State=recode(State,!!!c("Dist. of Columbia"="District of Columbia")))
 ```
 
 
-
+```{r Electoral Votes}
+library(rvest)
+#Scrape historical number of electoral votes by state by year
+url <- "https://www.270towin.com/state-electoral-vote-history/"
+electoral_votes <- read_html(url) %>% html_nodes("table") %>% html_table %>% .[[1]] 
+electoral_votes <- electoral_votes %>% gather(year,nvotes,-1)
+names(electoral_votes) <- c('state','year','nvotes')
+electoral_votes <- electoral_votes %>% mutate(year=as.numeric(year)) %>% filter(year %in% seq(1976,2016,4))
+write.csv(electoral_votes,'Data/Electoral_Votes_by_State.csv',row.names=F)
+```
 
 
 
 ```{r}
 #Adapted from: https://slate.com/news-and-politics/2016/11/here-are-the-chances-your-vote-matters.html
-influence = data.frame(states = c(state.abb), 
+influence = data.frame(state = c(state.abb), 
                        chance = c(1/7e9,1/100e6,1/40e6, 1/3e9,
                                  1/7e9,1/1e6, 1/40e6, 1/300e6,
                                  1/3e6, 1/60e6, 1/1e9, 1/10e9,
@@ -297,7 +317,7 @@ influence = data.frame(states = c(state.abb),
 
 
 va <- influence %>%
-  filter(states == "VA")
+  filter(state == "VA")
 va_example <- budg_admin * va$chance * 1e6
 ```
 
@@ -306,30 +326,38 @@ va_example <- budg_admin * va$chance * 1e6
 # 3 variables: Year, Sector, State
 library(caret)
 #Setting up Data:
-yrs = c(colnames(budg_admin))
-sector = rownames(budg_admin)
-state = state.abb
-y = stack(budg_admin)
-y$values = y$values * 1e6
-output = data.frame(tcrossprod(y$values,influence$chance))
-colnames(output) = state
-full_set = stack(output)
-full_set <- full_set %>%
-  group_by(ind) %>%
-  mutate(years = as.numeric(rep(yrs,each = length(sector)))) %>%
-  mutate(sectors = rep(sector, length(yrs)))
+# Calc expected value of vote by state by sector
+full_set <- budg_admin %>% 
+  tibble::rownames_to_column("sector") %>% 
+  gather(year,budget,-sector) %>% 
+  left_join(influence,by=character()) %>% #cross join with chance of flipping
+  mutate(value=chance*budget) %>% select(-c("chance","budget")) # expected budget value
 
-vars <- c("years")
-featurePlot(x = full_set[, vars], 
-            y = full_set$values, 
+# Put in Census variables as features
+state_name_to_abb <- setNames(state.name,state.abb)
+full_set <- full_set %>% 
+  mutate(state=recode(state,!!!state_name_to_abb)) %>%
+  left_join(demo,by='state')
+
+# Put in voter_turnout
+
+vars <- c("year")
+featurePlot(x = full_set[vars], 
+            y = full_set$value, 
             plot = "scatter",
             type = c("p", "smooth"),
             span = .5,
             layout = c(3, 1))
 
-mod <- lm(values ~ ind + year + sectors, data = full_set)
+#plan A predict swing state in 2024
+#swing state: vote_margin < .0001
+# predictors: census variables, year (numeric), electoral votes
+
+# plan B: value of your vote based on year and sector in 2024
+mod <- lm(value ~ year + sector) # plan B
+mod <- lm(value ~ . - value - state - nonwhite_pct, data = drop_na(full_set))
 summary(mod)
-residuals(mod)
+#residuals(mod)
 ```
 
 

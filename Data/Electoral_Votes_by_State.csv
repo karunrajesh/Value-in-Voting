@@ -1,0 +1,562 @@
+"state","year","nvotes"
+"Alabama",1976,9
+"Alaska",1976,3
+"Arizona",1976,6
+"Arkansas",1976,6
+"California",1976,45
+"Colorado",1976,7
+"Connecticut",1976,8
+"Delaware",1976,3
+"District of Columbia",1976,3
+"Florida",1976,17
+"Georgia",1976,12
+"Hawaii",1976,4
+"Idaho",1976,4
+"Illinois",1976,26
+"Indiana",1976,13
+"Iowa",1976,8
+"Kansas",1976,7
+"Kentucky",1976,9
+"Louisiana",1976,10
+"Maine",1976,4
+"Maryland",1976,10
+"Massachusetts",1976,14
+"Michigan",1976,21
+"Minnesota",1976,10
+"Mississippi",1976,7
+"Missouri",1976,12
+"Montana",1976,4
+"Nebraska",1976,5
+"Nevada",1976,3
+"New Hampshire",1976,4
+"New Jersey",1976,17
+"New Mexico",1976,4
+"New York",1976,41
+"North Carolina",1976,13
+"North Dakota",1976,3
+"Ohio",1976,25
+"Oklahoma",1976,8
+"Oregon",1976,6
+"Pennsylvania",1976,27
+"Rhode Island",1976,4
+"South Carolina",1976,8
+"South Dakota",1976,4
+"Tennessee",1976,10
+"Texas",1976,26
+"Utah",1976,4
+"Vermont",1976,3
+"Virginia",1976,12
+"Washington",1976,9
+"West Virginia",1976,6
+"Wisconsin",1976,11
+"Wyoming",1976,3
+"Alabama",1980,9
+"Alaska",1980,3
+"Arizona",1980,6
+"Arkansas",1980,6
+"California",1980,45
+"Colorado",1980,7
+"Connecticut",1980,8
+"Delaware",1980,3
+"District of Columbia",1980,3
+"Florida",1980,17
+"Georgia",1980,12
+"Hawaii",1980,4
+"Idaho",1980,4
+"Illinois",1980,26
+"Indiana",1980,13
+"Iowa",1980,8
+"Kansas",1980,7
+"Kentucky",1980,9
+"Louisiana",1980,10
+"Maine",1980,4
+"Maryland",1980,10
+"Massachusetts",1980,14
+"Michigan",1980,21
+"Minnesota",1980,10
+"Mississippi",1980,7
+"Missouri",1980,12
+"Montana",1980,4
+"Nebraska",1980,5
+"Nevada",1980,3
+"New Hampshire",1980,4
+"New Jersey",1980,17
+"New Mexico",1980,4
+"New York",1980,41
+"North Carolina",1980,13
+"North Dakota",1980,3
+"Ohio",1980,25
+"Oklahoma",1980,8
+"Oregon",1980,6
+"Pennsylvania",1980,27
+"Rhode Island",1980,4
+"South Carolina",1980,8
+"South Dakota",1980,4
+"Tennessee",1980,10
+"Texas",1980,26
+"Utah",1980,4
+"Vermont",1980,3
+"Virginia",1980,12
+"Washington",1980,9
+"West Virginia",1980,6
+"Wisconsin",1980,11
+"Wyoming",1980,3
+"Alabama",1984,9
+"Alaska",1984,3
+"Arizona",1984,7
+"Arkansas",1984,6
+"California",1984,47
+"Colorado",1984,8
+"Connecticut",1984,8
+"Delaware",1984,3
+"District of Columbia",1984,3
+"Florida",1984,21
+"Georgia",1984,12
+"Hawaii",1984,4
+"Idaho",1984,4
+"Illinois",1984,24
+"Indiana",1984,12
+"Iowa",1984,8
+"Kansas",1984,7
+"Kentucky",1984,9
+"Louisiana",1984,10
+"Maine",1984,4
+"Maryland",1984,10
+"Massachusetts",1984,13
+"Michigan",1984,20
+"Minnesota",1984,10
+"Mississippi",1984,7
+"Missouri",1984,11
+"Montana",1984,4
+"Nebraska",1984,5
+"Nevada",1984,4
+"New Hampshire",1984,4
+"New Jersey",1984,16
+"New Mexico",1984,5
+"New York",1984,36
+"North Carolina",1984,13
+"North Dakota",1984,3
+"Ohio",1984,23
+"Oklahoma",1984,8
+"Oregon",1984,7
+"Pennsylvania",1984,25
+"Rhode Island",1984,4
+"South Carolina",1984,8
+"South Dakota",1984,3
+"Tennessee",1984,11
+"Texas",1984,29
+"Utah",1984,5
+"Vermont",1984,3
+"Virginia",1984,12
+"Washington",1984,10
+"West Virginia",1984,6
+"Wisconsin",1984,11
+"Wyoming",1984,3
+"Alabama",1988,9
+"Alaska",1988,3
+"Arizona",1988,7
+"Arkansas",1988,6
+"California",1988,47
+"Colorado",1988,8
+"Connecticut",1988,8
+"Delaware",1988,3
+"District of Columbia",1988,3
+"Florida",1988,21
+"Georgia",1988,12
+"Hawaii",1988,4
+"Idaho",1988,4
+"Illinois",1988,24
+"Indiana",1988,12
+"Iowa",1988,8
+"Kansas",1988,7
+"Kentucky",1988,9
+"Louisiana",1988,10
+"Maine",1988,4
+"Maryland",1988,10
+"Massachusetts",1988,13
+"Michigan",1988,20
+"Minnesota",1988,10
+"Mississippi",1988,7
+"Missouri",1988,11
+"Montana",1988,4
+"Nebraska",1988,5
+"Nevada",1988,4
+"New Hampshire",1988,4
+"New Jersey",1988,16
+"New Mexico",1988,5
+"New York",1988,36
+"North Carolina",1988,13
+"North Dakota",1988,3
+"Ohio",1988,23
+"Oklahoma",1988,8
+"Oregon",1988,7
+"Pennsylvania",1988,25
+"Rhode Island",1988,4
+"South Carolina",1988,8
+"South Dakota",1988,3
+"Tennessee",1988,11
+"Texas",1988,29
+"Utah",1988,5
+"Vermont",1988,3
+"Virginia",1988,12
+"Washington",1988,10
+"West Virginia",1988,6
+"Wisconsin",1988,11
+"Wyoming",1988,3
+"Alabama",1992,9
+"Alaska",1992,3
+"Arizona",1992,8
+"Arkansas",1992,6
+"California",1992,54
+"Colorado",1992,8
+"Connecticut",1992,8
+"Delaware",1992,3
+"District of Columbia",1992,3
+"Florida",1992,25
+"Georgia",1992,13
+"Hawaii",1992,4
+"Idaho",1992,4
+"Illinois",1992,22
+"Indiana",1992,12
+"Iowa",1992,7
+"Kansas",1992,6
+"Kentucky",1992,8
+"Louisiana",1992,9
+"Maine",1992,4
+"Maryland",1992,10
+"Massachusetts",1992,12
+"Michigan",1992,18
+"Minnesota",1992,10
+"Mississippi",1992,7
+"Missouri",1992,11
+"Montana",1992,3
+"Nebraska",1992,5
+"Nevada",1992,4
+"New Hampshire",1992,4
+"New Jersey",1992,15
+"New Mexico",1992,5
+"New York",1992,33
+"North Carolina",1992,14
+"North Dakota",1992,3
+"Ohio",1992,21
+"Oklahoma",1992,8
+"Oregon",1992,7
+"Pennsylvania",1992,23
+"Rhode Island",1992,4
+"South Carolina",1992,8
+"South Dakota",1992,3
+"Tennessee",1992,11
+"Texas",1992,32
+"Utah",1992,5
+"Vermont",1992,3
+"Virginia",1992,13
+"Washington",1992,11
+"West Virginia",1992,5
+"Wisconsin",1992,11
+"Wyoming",1992,3
+"Alabama",1996,9
+"Alaska",1996,3
+"Arizona",1996,8
+"Arkansas",1996,6
+"California",1996,54
+"Colorado",1996,8
+"Connecticut",1996,8
+"Delaware",1996,3
+"District of Columbia",1996,3
+"Florida",1996,25
+"Georgia",1996,13
+"Hawaii",1996,4
+"Idaho",1996,4
+"Illinois",1996,22
+"Indiana",1996,12
+"Iowa",1996,7
+"Kansas",1996,6
+"Kentucky",1996,8
+"Louisiana",1996,9
+"Maine",1996,4
+"Maryland",1996,10
+"Massachusetts",1996,12
+"Michigan",1996,18
+"Minnesota",1996,10
+"Mississippi",1996,7
+"Missouri",1996,11
+"Montana",1996,3
+"Nebraska",1996,5
+"Nevada",1996,4
+"New Hampshire",1996,4
+"New Jersey",1996,15
+"New Mexico",1996,5
+"New York",1996,33
+"North Carolina",1996,14
+"North Dakota",1996,3
+"Ohio",1996,21
+"Oklahoma",1996,8
+"Oregon",1996,7
+"Pennsylvania",1996,23
+"Rhode Island",1996,4
+"South Carolina",1996,8
+"South Dakota",1996,3
+"Tennessee",1996,11
+"Texas",1996,32
+"Utah",1996,5
+"Vermont",1996,3
+"Virginia",1996,13
+"Washington",1996,11
+"West Virginia",1996,5
+"Wisconsin",1996,11
+"Wyoming",1996,3
+"Alabama",2000,9
+"Alaska",2000,3
+"Arizona",2000,8
+"Arkansas",2000,6
+"California",2000,54
+"Colorado",2000,8
+"Connecticut",2000,8
+"Delaware",2000,3
+"District of Columbia",2000,3
+"Florida",2000,25
+"Georgia",2000,13
+"Hawaii",2000,4
+"Idaho",2000,4
+"Illinois",2000,22
+"Indiana",2000,12
+"Iowa",2000,7
+"Kansas",2000,6
+"Kentucky",2000,8
+"Louisiana",2000,9
+"Maine",2000,4
+"Maryland",2000,10
+"Massachusetts",2000,12
+"Michigan",2000,18
+"Minnesota",2000,10
+"Mississippi",2000,7
+"Missouri",2000,11
+"Montana",2000,3
+"Nebraska",2000,5
+"Nevada",2000,4
+"New Hampshire",2000,4
+"New Jersey",2000,15
+"New Mexico",2000,5
+"New York",2000,33
+"North Carolina",2000,14
+"North Dakota",2000,3
+"Ohio",2000,21
+"Oklahoma",2000,8
+"Oregon",2000,7
+"Pennsylvania",2000,23
+"Rhode Island",2000,4
+"South Carolina",2000,8
+"South Dakota",2000,3
+"Tennessee",2000,11
+"Texas",2000,32
+"Utah",2000,5
+"Vermont",2000,3
+"Virginia",2000,13
+"Washington",2000,11
+"West Virginia",2000,5
+"Wisconsin",2000,11
+"Wyoming",2000,3
+"Alabama",2004,9
+"Alaska",2004,3
+"Arizona",2004,10
+"Arkansas",2004,6
+"California",2004,55
+"Colorado",2004,9
+"Connecticut",2004,7
+"Delaware",2004,3
+"District of Columbia",2004,3
+"Florida",2004,27
+"Georgia",2004,15
+"Hawaii",2004,4
+"Idaho",2004,4
+"Illinois",2004,21
+"Indiana",2004,11
+"Iowa",2004,7
+"Kansas",2004,6
+"Kentucky",2004,8
+"Louisiana",2004,9
+"Maine",2004,4
+"Maryland",2004,10
+"Massachusetts",2004,12
+"Michigan",2004,17
+"Minnesota",2004,10
+"Mississippi",2004,6
+"Missouri",2004,11
+"Montana",2004,3
+"Nebraska",2004,5
+"Nevada",2004,5
+"New Hampshire",2004,4
+"New Jersey",2004,15
+"New Mexico",2004,5
+"New York",2004,31
+"North Carolina",2004,15
+"North Dakota",2004,3
+"Ohio",2004,20
+"Oklahoma",2004,7
+"Oregon",2004,7
+"Pennsylvania",2004,21
+"Rhode Island",2004,4
+"South Carolina",2004,8
+"South Dakota",2004,3
+"Tennessee",2004,11
+"Texas",2004,34
+"Utah",2004,5
+"Vermont",2004,3
+"Virginia",2004,13
+"Washington",2004,11
+"West Virginia",2004,5
+"Wisconsin",2004,10
+"Wyoming",2004,3
+"Alabama",2008,9
+"Alaska",2008,3
+"Arizona",2008,10
+"Arkansas",2008,6
+"California",2008,55
+"Colorado",2008,9
+"Connecticut",2008,7
+"Delaware",2008,3
+"District of Columbia",2008,3
+"Florida",2008,27
+"Georgia",2008,15
+"Hawaii",2008,4
+"Idaho",2008,4
+"Illinois",2008,21
+"Indiana",2008,11
+"Iowa",2008,7
+"Kansas",2008,5
+"Kentucky",2008,8
+"Louisiana",2008,9
+"Maine",2008,4
+"Maryland",2008,10
+"Massachusetts",2008,12
+"Michigan",2008,17
+"Minnesota",2008,10
+"Mississippi",2008,6
+"Missouri",2008,11
+"Montana",2008,3
+"Nebraska",2008,5
+"Nevada",2008,5
+"New Hampshire",2008,4
+"New Jersey",2008,15
+"New Mexico",2008,5
+"New York",2008,31
+"North Carolina",2008,15
+"North Dakota",2008,3
+"Ohio",2008,20
+"Oklahoma",2008,7
+"Oregon",2008,7
+"Pennsylvania",2008,21
+"Rhode Island",2008,4
+"South Carolina",2008,8
+"South Dakota",2008,3
+"Tennessee",2008,11
+"Texas",2008,34
+"Utah",2008,5
+"Vermont",2008,3
+"Virginia",2008,13
+"Washington",2008,11
+"West Virginia",2008,5
+"Wisconsin",2008,10
+"Wyoming",2008,3
+"Alabama",2012,9
+"Alaska",2012,3
+"Arizona",2012,11
+"Arkansas",2012,6
+"California",2012,55
+"Colorado",2012,9
+"Connecticut",2012,7
+"Delaware",2012,3
+"District of Columbia",2012,3
+"Florida",2012,29
+"Georgia",2012,16
+"Hawaii",2012,4
+"Idaho",2012,4
+"Illinois",2012,20
+"Indiana",2012,11
+"Iowa",2012,6
+"Kansas",2012,6
+"Kentucky",2012,8
+"Louisiana",2012,8
+"Maine",2012,4
+"Maryland",2012,10
+"Massachusetts",2012,11
+"Michigan",2012,16
+"Minnesota",2012,10
+"Mississippi",2012,6
+"Missouri",2012,10
+"Montana",2012,3
+"Nebraska",2012,5
+"Nevada",2012,6
+"New Hampshire",2012,4
+"New Jersey",2012,14
+"New Mexico",2012,5
+"New York",2012,29
+"North Carolina",2012,15
+"North Dakota",2012,3
+"Ohio",2012,18
+"Oklahoma",2012,7
+"Oregon",2012,7
+"Pennsylvania",2012,20
+"Rhode Island",2012,4
+"South Carolina",2012,9
+"South Dakota",2012,3
+"Tennessee",2012,11
+"Texas",2012,38
+"Utah",2012,6
+"Vermont",2012,3
+"Virginia",2012,13
+"Washington",2012,12
+"West Virginia",2012,5
+"Wisconsin",2012,10
+"Wyoming",2012,3
+"Alabama",2016,9
+"Alaska",2016,3
+"Arizona",2016,11
+"Arkansas",2016,6
+"California",2016,55
+"Colorado",2016,9
+"Connecticut",2016,7
+"Delaware",2016,3
+"District of Columbia",2016,3
+"Florida",2016,29
+"Georgia",2016,16
+"Hawaii",2016,4
+"Idaho",2016,4
+"Illinois",2016,20
+"Indiana",2016,11
+"Iowa",2016,6
+"Kansas",2016,6
+"Kentucky",2016,8
+"Louisiana",2016,8
+"Maine",2016,4
+"Maryland",2016,10
+"Massachusetts",2016,11
+"Michigan",2016,16
+"Minnesota",2016,10
+"Mississippi",2016,6
+"Missouri",2016,10
+"Montana",2016,3
+"Nebraska",2016,5
+"Nevada",2016,6
+"New Hampshire",2016,4
+"New Jersey",2016,14
+"New Mexico",2016,5
+"New York",2016,29
+"North Carolina",2016,15
+"North Dakota",2016,3
+"Ohio",2016,18
+"Oklahoma",2016,7
+"Oregon",2016,7
+"Pennsylvania",2016,20
+"Rhode Island",2016,4
+"South Carolina",2016,9
+"South Dakota",2016,3
+"Tennessee",2016,11
+"Texas",2016,38
+"Utah",2016,6
+"Vermont",2016,3
+"Virginia",2016,13
+"Washington",2016,12
+"West Virginia",2016,5
+"Wisconsin",2016,10
+"Wyoming",2016,3
