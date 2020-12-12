@@ -1,6 +1,8 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
@@ -13,6 +15,30 @@ library(ggplot2)
 library(dplyr)
 library(reshape2)
 ```
+
+## Introduction and Overview
+
+Voting has become an increasingly important topic, especially in the United States. Studies have shown that those ages 18 to 29 have consistently voted at lower levels, over 15% lower, than general election turnout. This can be attributed to many reasons. Habit formation in initial voting, opportunity cost of voting, and alternative participation like protesting. Another reason is that the value of voting is not apparent. Someone voting in California, where it will almost assuredly vote democratic, may not see a point to participating in a process where their vote is drowned in a sea of trillions of others. Without this knowledge of value, people will not understand the impact they can have and continue to be unseen in elections. To increase voter turnout, it is imperative that the value of one’s vote becomes clear at every level of election around them. For instance, the 2020 election has been one of the most heavily funded elections with the most voter turnout in U.S. history. The record number of civil engagements highlighted the importance of this election. We have seen many different organizations like the NFL, NBA, Facebook, and others continuously push voting ad-campaigns like never before. It immediately made us think about the value of our singular votes and how much change we can affect with just this one action. We also wanted to provide an alternative view to the case of voting, besides the worn out “civic duty” argument, to peers around us who did not see reason in voting.
+ 
+However, just how much is your vote worth? How much does a vote actually matter in terms of its economic impact? These questions could be critical in future campaign in promoting voting by directly demonstrating in a quantitative fashion how much impact each vote makes. 
+ 
+In order to begin answering these questions, we obtained a detailed breakdown of data on voter turnout, how much money each administration has spent on relevant sectors such as education, agriculture, military dense etc. and the possibility of a single vote overturning election results by state from past US presidential elections. We then can calculate the monetary value of each vote for particular sectors of interests. Further we hope to use these datasets to draw inferences for the values in a single vote in 2024 election.
+
+
+
+## Related Work
+
+While civil engagement has been a topic of interest for an extended period of time, when searching literature bases, we found that most of the studies on values in voting are related to communal moral values and political social values, instead of our focus on physical monetary values. 
+ 
+The value of a singular vote is often discussed in many commentaries and literature. For example, the article titled “The Importance of Voting” (https://www.castleton.edu/news-media/article/the-importance-of-voting/) discussed how many political scientists and civic educators express the idea that voting is important without explaining why that is the case. It also discussed this misconception that many Americans have about their votes appearing unimportant and unlikely to make a difference. It presents the striking statistics that for 2016 presidential election, the entire outcome hinged on approximately 78,000 votes, or less than 0.06% of the total votes cast. More so, in 2017, the 94th District of the Virginia House of Delegates, wherein 11,608 ballots were cast, resulted in a tie, and the winner was chosen by randomly drawing a name from a hat. These tight races all highlight the importance of even singular votes and similar examples vastly exceed just the two mentioned above. 
+ 
+On the other hand, research in voter turnout has shown that the U.S. trails consistently most developed countries. According to Pew Research (https://www.pewresearch.org/fact-tank/2020/11/03/in-past-elections-u-s-trailed-most-developed-countries-in-voter-turnout/), in 2016, the U.S. had a 55.7% VAP turnout which puts the U.S. behind most of its peers in the Organization for Economic Cooperation and Development, most of whose members are highly developed democratic states. Additionally, turnout rate for people of color was also a concerned with a significant decline in the 2016 election, according to Pew Research (https://www.pewresearch.org/fact-tank/2017/05/12/black-voter-turnout-fell-in-2016-even-as-a-record-number-of-americans-cast-ballots/). These studies suggest that conveying the monetary values of civic engagement, and targeted support for people of color and underrepresented minority are important to facilitate higher voter turnout and could be highly beneficial to the democratic process.
+
+## Initial Questions
+
+Voting has become an increasingly important topic, especially in the United States. Those ages 18 to 29 have consistently voted at lower levels, over 15% lower, than general election turnout. This can be attributed to many reasons. Habit formation in initial voting, opportunity cost of voting, and alternative participation like protesting. Another reason is that the value of voting is not apparent. Someone voting in California, where it will almost assuredly vote democratic, may not see a point to participating in a process where their vote is drowned in a sea of trillions of others. Without this knowledge of value, people will not understand the impact they can have and continue to be unseen in elections. To increase voter turnout, it is imperative that the value of one’s vote becomes clear at every level of election around them.
+
+On a more personal note, we have seen many different organizations like the NFL, NBA, Facebook, and others continuously push voting ad-campaigns like never before. It immediately made us think about the value of our singular votes and how much change we can effect with just that one action. We also wanted to provide an alternative view to the case of voting, besides the worn out “civic duty” argument, to peers around us who did not see reason in voting.
 
 ```{r}
 presidential <- read.csv("Data/1976-2016-president.csv")
@@ -90,85 +116,7 @@ parties_sen <- senate %>%
 # Evaluate average voting time and its value
 ```
 
-
-```{r InitalPlots}
-overall_turnout <- presidential_turnout %>%
-  group_by(year) %>%
-  summarize(total = sum(totalvotes))
-
-# Overall Voter Turnout
-overall_turnout %>%
-  ggplot(aes(year,total)) + 
-  geom_line() +
-  geom_point()
-
-#Voter turnout by State, could have user select state
-presidential_turnout %>%
-  filter(state == "Virginia") %>%
-  ggplot(aes(year,totalvotes)) + 
-  geom_line() +
-  geom_point()
-
-# Show parties switching per state 
-parties_pres %>%
-  filter(state == "Virginia")
-
-# Margin of Victory, by state
-margin_pres %>% 
-  filter(state == "Virginia") %>%
-  ggplot(aes(year,margin)) + 
-  geom_line() +
-  geom_point(aes(colour = party), size = 5) +
-  scale_color_manual(values=c("blue", "red"))
-
-# Demographics, 2016 Election, show as table 
-demo <- context_state[,-c(2:22)]
-demo <- demo %>%
-  filter(!state %in% c("Missouri", "Virginia", "South Dakota"))
-
-# Chance of influencing the election, based on 2012 results, # NEEDS INFLUENCE TABLE BELOW
-# Show 5-6 states
-influence$chance <- as.numeric(influence$chance)
-influence %>%
-  filter(state %in% c("AL", "NV", "NC", "VA", "WY")) %>%
-  ggplot(aes(state, chance)) +
-  geom_bar(stat="identity") 
-
-# Show value of vote, given state and department, # NEEDS INFLUENCE AND BUDG_ADMIN TABLE BELOW
-va <- influence %>%
-  filter(state == "VA")
-va_example <- budg_admin * va$chance * 1e6
-example <- va_example %>%
-  filter(rownames(va_example) %in% c("Department of Education", "Department of Transportation"))
-example <- as.data.frame(t(example))
-colnames(example) = c("Department of Education", "Department of Transportation")
-example$year <- rownames(example)
-example <- melt(example, id.vars=c("year"))
-example %>%
-  ggplot(aes(x=as.numeric(year), y=value, color=variable)) + geom_line() +
-  xlab("Year") + ylab("Value of Vote (in dollars)")
-
-```
-
-```{r}
-# Contains the mandatory federal spending per year per agency
-budg_all <- read.csv("Data/budget_amount.csv")
-budg_all <- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE)
-colnames(budg_all) = budg_all[2,]
-rownames(budg_all) = budg_all[,1]
-budg_all = budg_all[-c(1,2,33,34),-1]
-cols <- colnames(budg_all)
-rows <- rownames(budg_all)
-budg = as.data.frame(lapply(budg_all, function(x) as.numeric(gsub(",","",x))))
-colnames(budg) <- cols
-rownames(budg) <- rows
-budg <- budg[,-c(1,2)]
-budg_admin <- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE)))
-
-colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])) - 1, 2020)
-
-#########################
-
+```{r Web Scraping}
 # Web Scraping, Potentially not needed
 library(rvest)
 library(tabulizer)
@@ -222,6 +170,94 @@ final[,1] <- NULL
 colnames(final) <- c("2001", "2008", "2009")
 final_f <- mutate_all(final, function(x) as.numeric(as.character(x)))
 rownames(final_f) = str_match(rows, "^(.*?)\\.")[,2]
+```
+
+```{r InitalPlots}
+overall_turnout <- presidential_turnout %>%
+  group_by(year) %>%
+  summarize(total = sum(totalvotes))
+
+# Overall Voter Turnout
+overall_turnout %>%
+  ggplot(aes(year,total)) + 
+  geom_line() +
+  geom_point()
+```
+
+```{r }
+#Voter turnout by State, could have user select state
+presidential_turnout %>%
+  filter(state == "Virginia") %>%
+  ggplot(aes(year,totalvotes)) + 
+  geom_line() +
+  geom_point()
+
+```
+
+```{r }
+# Show parties switching per state 
+parties_pres %>%
+  filter(state == "Virginia")
+
+# Margin of Victory, by state
+margin_pres %>% 
+  filter(state == "Virginia") %>%
+  ggplot(aes(year,margin)) + 
+  geom_line() +
+  geom_point(aes(colour = party), size = 5) +
+  scale_color_manual(values=c("blue", "red"))
+```
+
+```{r Demographics}
+
+# Demographics, 2016 Election, show as table 
+demo <- context_state[,-c(2:22)]
+demo <- demo %>%
+  filter(!state %in% c("Missouri", "Virginia", "South Dakota"))
+
+# Chance of influencing the election, based on 2012 results, # NEEDS INFLUENCE TABLE BELOW
+# Show 5-6 states
+influence$chance <- as.numeric(influence$chance)
+influence %>%
+  filter(state %in% c("AL", "NV", "NC", "VA", "WY")) %>%
+  ggplot(aes(state, chance)) +
+  geom_bar(stat="identity") 
+
+# Show value of vote, given state and department, # NEEDS INFLUENCE AND BUDG_ADMIN TABLE BELOW
+va <- influence %>%
+  filter(state == "VA")
+va_example <- budg_admin * va$chance * 1e6
+example <- va_example %>%
+  filter(rownames(va_example) %in% c("Department of Education", "Department of Transportation"))
+example <- as.data.frame(t(example))
+colnames(example) = c("Department of Education", "Department of Transportation")
+example$year <- rownames(example)
+example <- melt(example, id.vars=c("year"))
+example %>%
+  ggplot(aes(x=as.numeric(year), y=value, color=variable)) + geom_line() +
+  xlab("Year") + ylab("Value of Vote (in dollars)")
+
+```
+
+```{r}
+# Contains the mandatory federal spending per year per agency
+budg_all <- read.csv("Data/budget_amount.csv")
+budg_all <- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE)
+colnames(budg_all) = budg_all[2,]
+rownames(budg_all) = budg_all[,1]
+budg_all = budg_all[-c(1,2,33,34),-1]
+cols <- colnames(budg_all)
+rows <- rownames(budg_all)
+budg = as.data.frame(lapply(budg_all, function(x) as.numeric(gsub(",","",x))))
+colnames(budg) <- cols
+rownames(budg) <- rows
+budg <- budg[,-c(1,2)]
+budg_admin <- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE)))
+
+colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])) - 1, 2020)
+
+#########################
+
 ```
 
 
