@@ -14,6 +14,10 @@ library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(reshape2)
+library(stringr)
+library(tabulizer)
+library(rvest)
+
 ```
 
 ## Introduction and Overview
@@ -21,7 +25,7 @@ library(reshape2)
 Voting has become an increasingly important topic, especially in the United States. Studies have shown that those ages 18 to 29 have consistently voted at lower levels, over 15% lower, than general election turnout. This can be attributed to many reasons. Habit formation in initial voting, opportunity cost of voting, and alternative participation like protesting. Another reason is that the value of voting is not apparent. Someone voting in California, where it will almost assuredly vote democratic, may not see a point to participating in a process where their vote is drowned in a sea of trillions of others. 
 
 ```{r echo=FALSE, results='hold', fig.cap="Voter Turnout by Age"}
-knitr::include_graphics("~/Data/low_turnout.png")
+knitr::include_graphics("Data/turnout.png")
 ```
 
 
@@ -61,8 +65,6 @@ presidential <- read.csv("Data/1976-2016-president.csv")
 senate <- read.csv("Data/1976-2018-senate.csv")
 
 head(presidential)
-
-
 ```
 
 We also used an analysis dataset published from this repository. This dataset consisted of the voter demographics in each county of the United States for the 2012 and 2016 presidential elections. It included voting breakdowns by race, gender, age, level of education, level of employment, and environment. We used this to understand more about the voting population, as well as, predict the value of a vote. 
@@ -157,7 +159,7 @@ The United States Election Project is an information source that houses election
 Show missing 1976 and 2016 columns and then explain later how it was filled in with web scraping
 
 ```{r Turnout}
-library(tabulizer)
+
 location <- 'https://sos.nh.gov/media/ni0j3zb5/1976-2016-presidental-election-highest-office-divided-by-vap.pdf'
 out <- extract_tables(location)
 df <- out[[2]]
@@ -221,7 +223,7 @@ turnout_2016 <- read.csv("Data/2016_Turnout.csv") %>% mutate(State=recode(State,
 Andrew Gelman is a professor of statistics and political science at Columbia University. He was one of the first people to publish studies that utilized statistical models to quantify the value of a vote. His work in the field motivated much of this work, and also served as a key data source. He published an article on Slate (https://slate.com/news-and-politics/2016/11/here-are-the-chances-your-vote-matters.html) that listed the probability of a single vote being decisive in the 2012 election.
 
 ```{r echo=FALSE, results='hold', fig.cap="Adapted from Gelman's Slate Article"}
-knitr::include_graphics("~/Data/Gelman.jpg")
+knitr::include_graphics("Data/Gelman.jpg")
 ```
 
 These were separated by states, with battleground states having higher values, Wisconsin with a 1 in 2 million chance, and dominant states having lower values, Oklahoma with a 1 in 30 billion chance. We used the probability of influencing an election, along with the discretionary budget data, to find the monetary value of a vote based on state and year. It should be noted that we do not replicate Gelman’s statistical models over each election year and utilize just one election year for our analysis. 
@@ -257,8 +259,6 @@ We web scraped several other datasets to fill in gaps found throughout the proce
 
 ```{r Web Scraping}
 # Web Scraping, Potentially not needed
-library(rvest)
-library(tabulizer)
 clean_table <- function(df){
   rownames(df) <- df[,1]
   df[,1] <- NULL
@@ -276,12 +276,9 @@ get_table <- function(url, i){
 budget_2020 <- get_table("https://www.thebalance.com/fy-2020-federal-budget-summary-of-revenue-and-spending-4797868", 1)
 
 
-blnk <- read_html("https://www.thebalance.com/fy-2019-federal-budget-summary-of-revenue-and-spending-4589082")
-hi <- blnk %>% html_nodes("table")
-
 
 turl <- "https://www.thebalance.com/how-trump-amended-obama-budget-4128986"
-h   <- read_html(url)
+h   <- read_html(turl)
 tab <- h %>% html_nodes("table")
 try <- h %>% html_nodes("table") %>% .[1]
 budget_comp <- try %>% html_table %>% .[[1]] 
@@ -392,7 +389,7 @@ write.csv(electoral_votes,'Data/Electoral_Votes_by_State.csv',row.names=F)
 
 
 
-```{r Regression}
+```{r Regression, eval=FALSE, include=FALSE}
 # 3 variables: Year, Sector, State
 library(caret)
 #Setting up Data:
