@@ -9,7 +9,7 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute
 
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
 
-```{r}
+```{r include=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
@@ -310,17 +310,37 @@ rownames(final_f) = str_match(rows, "^(.*?)\\.")[,2]
 
 ## Exploratory Analysis
 
-We broke down our exploratory analysis into three main portions: 
+We broke down our exploratory analysis into four main portions: 
+
+* Demographics
 
 * Voting Trends Over Time
+
+    + Voter Turnout
+    + Voting Margin of Victory
+    + Election Result by State
 
 * Discretionary Budget Breakdown
 
 * Value of a Single Vote
 
+#### Demographics
+
+
+```{r Demographics}
+
+# Demographics, 2016 Election, show as table 
+demo <- context_state[,-c(2:22)]
+demo <- demo %>%
+  filter(!state %in% c("Missouri", "Virginia", "South Dakota"))
+head(demo)
+
+```
+
 #### Voting Trends Over Time
 
-We first wanted to explore trends in voter turnout over time. 
+We first wanted to explore trends in voter turnout over time. The plots below show the overall voter turnout from 1976 to 2016, as well as state level voter turnout. In our shiny app, we allow the user to select up to six states to display the voter turnout. 
+
 ```{r InitalPlots}
 overall_turnout <- presidential_turnout %>%
   group_by(year) %>%
@@ -343,22 +363,11 @@ presidential_turnout %>%
 
 ```
 
+What we realized is that this only communicated the number of total people that voted from a given state. This would not be an effective way to show voter turnout especially when comparing a state like California with a high population to Oklahoma with a much lower population. This is why we pulled the voter turnout percentage from each state using the dataset provided by the United States Election Project, as talked about above.
+
 ```{r }
-# Show parties switching per state 
-parties_pres %>%
-  filter(state == "Virginia")
-
-# Margin of Victory, by state
-margin_pres %>% 
-  filter(state == "Virginia") %>%
-  ggplot(aes(year,margin)) + 
-  geom_line() +
-  geom_point(aes(colour = party), size = 5) +
-  scale_color_manual(values=c("blue", "red"))
-```
-
-```{r}
-us_states <- map_data("state") %>% mutate(state=region)
+# Use the turnout percentage
+#Voter turnout by State, could have user select state
 turnout <- read.csv("Data/Turnout.csv") %>%
   filter(X %in% seq(1976, 2016, by = 4)) %>%
   select(X, State, X.4) %>% 
@@ -371,25 +380,115 @@ presidential_turnout <- turnout_1976 %>%
   mutate(year = as.numeric(as.character(year)),turnout=as.numeric(str_replace(turnout,"%",""))) %>%
   filter(state !='United States')
 
-presidential_turnout_w_map <- presidential_turnout %>%
-  mutate(state = tolower(state)) %>% left_join(us_states,by='state')
-margin_pres_w_map <- margin_pres %>%
-  mutate(state = tolower(state)) %>% left_join(us_states,by='state')
-
-presidential_turnout_w_map %>% filter(year==input$year) %>% mutate(fillcolor=turnout)
-margin_pres_w_map %>% filter(year==input$year) %>% mutate(fillcolor=margin)
-parties_pres_w_map %>% filter(year==input$year) %>% mutate(fillcolor=str_to_title(party))
+presidential_turnout %>%
+  filter(state == "Virginia") %>%
+  ggplot(aes(year,turnout)) + 
+  geom_line() +
+  geom_point()
 
 ```
 
 
-```{r Demographics}
+We then looked at the margin of victory for each state. With this, we hoped to show how some states, such as Oklahoma and Wyoming were strongholds that had large margins of victory, whereas, other states such as New Hampshire were closer in margin. We also wanted to see what trends existed in these margins over time. What have the margins been like over time for a battleground state as compared to a stronghold state. 
 
-# Demographics, 2016 Election, show as table 
-demo <- context_state[,-c(2:22)]
-demo <- demo %>%
-  filter(!state %in% c("Missouri", "Virginia", "South Dakota"))
+```{r }
+# Margin of Victory, by state
+margin_pres %>% 
+  filter(state %in% c("Virginia")) %>%
+  ggplot(aes(year,margin)) + 
+  geom_line() +
+  geom_point(aes(colour = party), size = 5) + 
+  scale_color_manual(values=c("blue", "red"))
+```
 
+What we realized was that we could use a heatmap to better communicate the overall trends in turnout, margins of victory, and the result of the election for each state. This was the method we used on our shiny application. Users would be able to pick the year of choice and whether they wanted to display the turnout, margin of victory, or result for each state. 
+
+```{r echo=FALSE}
+us_states <- map_data("state") %>% mutate(state=region)
+
+presidential_turnout_w_map <- presidential_turnout %>%
+  mutate(state = tolower(state)) %>% left_join(us_states,by='state')
+margin_pres_w_map <- margin_pres %>%
+  mutate(state = tolower(state)) %>% left_join(us_states,by='state')
+parties_pres_w_map <- parties_pres %>%
+  ungroup() %>%
+  mutate(state = tolower(state)) %>% left_join(us_states,by='state')
+
+color_scale_min <- c('Margins'= min(margin_pres$margin),'Voter Turnout'=min(presidential_turnout$turnout))
+color_scale_max <- c('Margins'= max(margin_pres$margin),'Voter Turnout'=max(presidential_turnout$turnout))
+
+mapdata <- presidential_turnout_w_map %>% filter(year==2016) %>% mutate(fillcolor=turnout)
+
+p<- mapdata %>% ggplot(aes(x = long, y = lat, fill = fillcolor, group = group)) + 
+      geom_polygon(color = "white") + 
+      coord_fixed(1.3) +
+      ggtitle('Voter Turnout') +
+      theme(panel.grid.major = element_blank(), 
+            panel.background = element_blank(),
+            axis.title = element_blank(), 
+            axis.text = element_blank(),
+            axis.ticks = element_blank(),
+            text = element_text(size=15),
+            legend.position="bottom",
+            plot.title = element_text(hjust = 0.5)
+      )
+p <- p + scale_fill_distiller(name='Voter Turnout',
+                                  palette="Spectral",
+                                  limits= c(color_scale_min['Voter Turnout'],color_scale_max['Voter Turnout'])
+             ) + theme(legend.key.width = unit(6,"lines"))
+p
+```
+
+```{r echo=FALSE}
+mapdata<- margin_pres_w_map %>% filter(year==2016) %>% mutate(fillcolor=margin)
+
+p<- mapdata %>% ggplot(aes(x = long, y = lat, fill = fillcolor, group = group)) + 
+      geom_polygon(color = "white") + 
+      coord_fixed(1.3) +
+      ggtitle('Margin of Victory in 2016 Presidential Election') +
+      theme(panel.grid.major = element_blank(), 
+            panel.background = element_blank(),
+            axis.title = element_blank(), 
+            axis.text = element_blank(),
+            axis.ticks = element_blank(),
+            text = element_text(size=15),
+            legend.position="bottom",
+            plot.title = element_text(hjust = 0.5)
+      )
+p <- p + scale_fill_distiller(name="Margins",
+                                     trans='log10',
+                                     palette="Spectral",
+                                     limits= c(color_scale_min["Margins"],color_scale_max["Margins"])
+       ) + theme(legend.key.width = unit(6,"lines"))
+
+p
+
+```
+
+```{r echo=FALSE}
+mapdata <- parties_pres_w_map %>% filter(year==2016) %>% mutate(fillcolor=str_to_title(party))
+
+p<- mapdata %>% ggplot(aes(x = long, y = lat, fill = fillcolor, group = group)) + 
+      geom_polygon(color = "white") + 
+      coord_fixed(1.3) +
+      ggtitle("2016 Presidential Election Results") +
+      theme(panel.grid.major = element_blank(), 
+            panel.background = element_blank(),
+            axis.title = element_blank(), 
+            axis.text = element_blank(),
+            axis.ticks = element_blank(),
+            text = element_text(size=15),
+            legend.position="bottom",
+            plot.title = element_text(hjust = 0.5)
+      ) 
+
+p <- p + scale_fill_manual(values=c("Democrat"="blue","Republican"="red","Democratic-Farmer-Labor"="darkgreen"))
+p
+```
+
+
+
+```{r }
 # Chance of influencing the election, based on 2012 results, # NEEDS INFLUENCE TABLE BELOW
 # Show 5-6 states
 influence$chance <- as.numeric(influence$chance)
@@ -411,7 +510,6 @@ example <- melt(example, id.vars=c("year"))
 example %>%
   ggplot(aes(x=as.numeric(year), y=value, color=variable)) + geom_line() +
   xlab("Year") + ylab("Value of Vote (in dollars)")
-
 ```
 
 
