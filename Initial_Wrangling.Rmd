@@ -18,7 +18,14 @@ library(reshape2)
 
 ## Introduction and Overview
 
-Voting has become an increasingly important topic, especially in the United States. Studies have shown that those ages 18 to 29 have consistently voted at lower levels, over 15% lower, than general election turnout. This can be attributed to many reasons. Habit formation in initial voting, opportunity cost of voting, and alternative participation like protesting. Another reason is that the value of voting is not apparent. Someone voting in California, where it will almost assuredly vote democratic, may not see a point to participating in a process where their vote is drowned in a sea of trillions of others. Without this knowledge of value, people will not understand the impact they can have and continue to be unseen in elections. To increase voter turnout, it is imperative that the value of one’s vote becomes clear at every level of election around them. For instance, the 2020 election has been one of the most heavily funded elections with the most voter turnout in U.S. history. The record number of civil engagements highlighted the importance of this election. We have seen many different organizations like the NFL, NBA, Facebook, and others continuously push voting ad-campaigns like never before. It immediately made us think about the value of our singular votes and how much change we can affect with just this one action. We also wanted to provide an alternative view to the case of voting, besides the worn out “civic duty” argument, to peers around us who did not see reason in voting.
+Voting has become an increasingly important topic, especially in the United States. Studies have shown that those ages 18 to 29 have consistently voted at lower levels, over 15% lower, than general election turnout. This can be attributed to many reasons. Habit formation in initial voting, opportunity cost of voting, and alternative participation like protesting. Another reason is that the value of voting is not apparent. Someone voting in California, where it will almost assuredly vote democratic, may not see a point to participating in a process where their vote is drowned in a sea of trillions of others. 
+
+```{r echo=FALSE, results='hold', fig.cap="Voter Turnout by Age"}
+knitr::include_graphics("~/Data/low_turnout.png")
+```
+
+
+Without this knowledge of value, people will not understand the impact they can have and continue to be unseen in elections. To increase voter turnout, it is imperative that the value of one’s vote becomes clear at every level of election around them. For instance, the 2020 election has been one of the most heavily funded elections with the most voter turnout in U.S. history. The record number of civil engagements highlighted the importance of this election. We have seen many different organizations like the NFL, NBA, Facebook, and others continuously push voting ad-campaigns like never before. It immediately made us think about the value of our singular votes and how much change we can affect with just this one action. We also wanted to provide an alternative view to the case of voting, besides the worn out “civic duty” argument, to peers around us who did not see reason in voting.
  
 However, just how much is your vote worth? How much does a vote actually matter in terms of its economic impact? These questions could be critical in future campaign in promoting voting by directly demonstrating in a quantitative fashion how much impact each vote makes. 
  
@@ -47,19 +54,24 @@ In this project, we use three main data sources, supplemented by other various d
 
 #### MIT Election Lab
 
+The MIT Election Lab is an online repository that stores past years (up to 1976) of election data at various levels (senate, presidential, etc.) These datasets are continuously updated each year, with new elections. Data in this repository is thoroughly cleaned, such that users can perform their own analysis directly after downloading. This dataset was used to obtain the voter turnout for each state at both the presidential and senate level (1976 - 2016). It lists not only the winner’s vote total for each state, but also other candidates' vote totals as well. From this dataset, we were able to derive voter turnout by state, margins of victory by state, and flipping of states between elections from 1976 to 2016. 
+
 ```{r}
 presidential <- read.csv("Data/1976-2016-president.csv")
 senate <- read.csv("Data/1976-2018-senate.csv")
-context <- read.csv("Data/election-context-2018.csv")
-#Get expenditures from web scraping
-#Start doing initial analyses with the data
-# Analysis 1: Demographics
-# Analysis 2: Value in Presidential Voting
-# Analysis 3: Value in Senate Voting
-# Regression: Predict number of votes for winning candidate given data
-# ML Prediction: Put in demographic characteristic and output value?
+
+head(presidential)
+
 
 ```
+
+We also used an analysis dataset published from this repository. This dataset consisted of the voter demographics in each county of the United States for the 2012 and 2016 presidential elections. It included voting breakdowns by race, gender, age, level of education, level of employment, and environment. We used this to understand more about the voting population, as well as, predict the value of a vote. 
+
+```{r}
+context <- read.csv("Data/election-context-2018.csv")
+head(context)
+```
+
 
 ```{r}
 #Analysis 1
@@ -67,7 +79,6 @@ presidential <- read.csv("Data/1976-2016-president.csv")
 senate <- read.csv("Data/1976-2018-senate.csv")
 context <- read.csv("Data/election-context-2018.csv")
 
-#a <- aggregate(-county ~ state, data = context, mean)
 context_state<- context %>%
   group_by(state) %>%
   dplyr::select(-county) %>%
@@ -111,20 +122,14 @@ parties_sen <- senate %>%
   filter(row_number() == 1) %>%
   dplyr::select(year, state, candidate, party)
 
-
-
-#Get expenditures from web scraping
-#Start doing initial analyses with the data
-# Analysis 1: Demographics
-# Analysis 2: Value in Presidential Voting
-# Analysis 3: Value in Senate Voting
-# Regression: Predict number of votes for winning candidate given data
-# ML Prediction: Put in demographic characteristic and output value?
-# Evaluate average voting time and its value
 ```
 
 
 #### White House Office of Management and Budget
+
+The White House’s Office of Management and Budget website contains historical tables that detail spending over several different categories (discretionary, deficits, agency, etc.) From this site, we were able to download the discretionary spending estimates over each year, starting from 1976, to an estimated amount in 2025. These estimates were split by agencies (Department of Defense, Department of Education, Department of Transportation, etc.) This was downloaded as a csv file, which was then cleaned in R. 
+
+We aggregated this data over each president’s term to get the total discretionary spending per term. This was then used to find the monetary value of one person’s vote in a given state for the given election year. 
 
 ```{r}
 # Contains the mandatory federal spending per year per agency
