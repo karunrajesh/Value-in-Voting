@@ -62,8 +62,7 @@ context_state<- context %>%
   dplyr::select(-county) %>%
   summarise_each(funs(mean))
 demo <- context_state[,-c(2:22)]
-demo <- demo %>%
-  filter(!state %in% c("Missouri", "Virginia", "South Dakota"))
+
 
 
 state_name_to_abb <- setNames(state.name,state.abb)
