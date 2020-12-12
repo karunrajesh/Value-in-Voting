@@ -320,9 +320,12 @@ We broke down our exploratory analysis into four main portions:
     + Voting Margin of Victory
     + Election Result by State
 
+* Chance of Influencing a Single Election
+
 * Discretionary Budget Breakdown
 
-* Value of a Single Vote
+* Value of a Vote
+
 
 #### Demographics
 
@@ -486,6 +489,21 @@ p <- p + scale_fill_manual(values=c("Democrat"="blue","Republican"="red","Democr
 p
 ```
 
+#### Chance of Influencing a Single Election
+
+Andrew Gelman published multiple papers and articles, as detailed above, that used statistical models to find the chance a single vote would swing an election. This served as our main launching point for finding the value in a vote. By equating this probability to each person's individual vote, we can start to answer how much value is in a vote. For instance, in the graph below we can see that a singular vote in Nevada (5 in 10 million) has a much higher chance of swinging an election as compared to Wyoming, which is almost 0 (1 in 30 billion). Thus the value of that singular vote in Nevada can be considered to be much higher than in Wyoming. We then extend this idea into our next section where we discuss the monetary value of a vote. 
+
+```{r }
+# Chance of influencing the election, based on 2012 results, # NEEDS INFLUENCE TABLE BELOW
+# Show 5-6 states
+influence$chance <- as.numeric(influence$chance)
+influence %>%
+  filter(state %in% c("AL", "NV", "NC", "VA", "WY")) %>%
+  ggplot(aes(state, chance, fill = state)) +
+  geom_bar(stat="identity") 
+
+```
+
 #### Discretionary Budget Breakdown
 
 When understanding the value of a vote, we thought to first find out the money spent during a president's term. This comes in the form of discretionary spending, which is allocated by a plan proposed by the president that is then approved. The reasoning behind this is so users could better understand where their vote was going. For instance, in 1976 presidency, the legislative branch received a total of \$4,543,000,000, while the Judicial Branch only received \$ 1,996,000,000 in comparison. From this, we can see the breakdown of how each president allocated their discretionary spending, and trends of this spending over time. Below is a table showing the discretionary spending for each agency from 1976 to an estimated amount during the 2020 presidency. 
@@ -494,7 +512,7 @@ When understanding the value of a vote, we thought to first find out the money s
 head(budg_admin)
 ```
 
-From this, we can see that Department of Education's allocated budget increased much faster compared to the Department of Transportation's. We can also see a sharp increase in the Department of Education in 2008, or President Obama's first term. 
+From the graph below, we can see that Department of Education's allocated budget increased much faster compared to the Department of Transportation's. We can also see a sharp increase in the Department of Education in 2008, or President Obama's first term. 
 
 ```{r}
 example <- budg_admin %>%
@@ -509,21 +527,15 @@ example %>%
 
 ```
 
+#### Value of a Vote
+
+We now move into the actual monetary value of a vote. Given the discretionary spending during a president's term and the probability of a singular vote in a given state, the expected value of the vote is equal to:
+
+$$E[Value] = Discretionary Spending * P(Vote|State)$$
+
+We can then plot this value for each presidency term from 1976 to 2016 for a given state and agency to find the expected value of a vote. As can be seen in the plot below, the expected value of a single vote in Virginia for the 2008 presidency was greater than $35,000 towards the Department of Education. This is an incredibly large amount a single vote holds and shows just how much power a single vote can contribute. 
 
 ```{r }
-# Chance of influencing the election, based on 2012 results, # NEEDS INFLUENCE TABLE BELOW
-# Show 5-6 states
-influence$chance <- as.numeric(influence$chance)
-influence %>%
-  filter(state %in% c("AL", "NV", "NC", "VA", "WY")) %>%
-  ggplot(aes(state, chance, colour = state)) +
-  geom_bar(stat="identity") 
-
-```
-
-```{r }
-
-# Show value of vote, given state and department, # NEEDS INFLUENCE AND BUDG_ADMIN TABLE BELOW
 va <- influence %>%
   filter(state == "VA")
 va_example <- budg_admin * va$chance * 1e6
@@ -534,7 +546,7 @@ colnames(example) = c("Department of Education", "Department of Transportation")
 example$year <- rownames(example)
 example <- melt(example, id.vars=c("year"))
 example %>%
-  ggplot(aes(x=as.numeric(year), y=value, color=variable)) + geom_line() +
+  ggplot(aes(x=as.numeric(year), y=value, color=variable)) + geom_line() + geom_point() +
   xlab("Year") + ylab("Value of Vote (in dollars)")
 ```
 
