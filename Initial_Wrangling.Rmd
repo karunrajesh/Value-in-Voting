@@ -40,6 +40,13 @@ Voting has become an increasingly important topic, especially in the United Stat
 
 On a more personal note, we have seen many different organizations like the NFL, NBA, Facebook, and others continuously push voting ad-campaigns like never before. It immediately made us think about the value of our singular votes and how much change we can effect with just that one action. We also wanted to provide an alternative view to the case of voting, besides the worn out “civic duty” argument, to peers around us who did not see reason in voting.
 
+
+## Data Sources:
+
+In this project, we use three main data sources, supplemented by other various datasets that have been web scraped. These sources allowed us to quantify the value of a single vote over the past 40 years of presidential elections. 
+
+#### MIT Election Lab
+
 ```{r}
 presidential <- read.csv("Data/1976-2016-president.csv")
 senate <- read.csv("Data/1976-2018-senate.csv")
@@ -115,6 +122,133 @@ parties_sen <- senate %>%
 # ML Prediction: Put in demographic characteristic and output value?
 # Evaluate average voting time and its value
 ```
+
+
+#### White House Office of Management and Budget
+
+```{r}
+# Contains the mandatory federal spending per year per agency
+budg_all <- read.csv("Data/budget_amount.csv")
+budg_all <- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE)
+colnames(budg_all) = budg_all[2,]
+rownames(budg_all) = budg_all[,1]
+budg_all = budg_all[-c(1,2,33,34),-1]
+cols <- colnames(budg_all)
+rows <- rownames(budg_all)
+budg = as.data.frame(lapply(budg_all, function(x) as.numeric(gsub(",","",x))))
+colnames(budg) <- cols
+rownames(budg) <- rows
+budg <- budg[,-c(1,2)]
+budg_admin <- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE)))
+
+colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])) - 1, 2020)
+
+```
+
+#### United States Election Project
+
+The United States Election Project is an information source that houses election data for each state over the past 50 years of elections. This source was mainly used to obtain the voter turnout as a percentage of the total eligible voters. This was combined with two other sources to obtain the full voter turnout per state from the 1976 to 2016 presidential election. 
+
+Show missing 1976 and 2016 columns and then explain later how it was filled in with web scraping
+
+```{r Turnout}
+library(tabulizer)
+location <- 'https://sos.nh.gov/media/ni0j3zb5/1976-2016-presidental-election-highest-office-divided-by-vap.pdf'
+out <- extract_tables(location)
+df <- out[[2]]
+final <- as.data.frame(df)
+final <- final[,-c(1,4,7,10,13,16)]
+final <- data.frame(lapply(final, as.character), stringsAsFactors=FALSE)
+colnames(final) <- final[1,]
+final <- final[-1,]
+
+final <- final[,c(11,12)]
+final <- final %>%
+  filter(`2016` != "United States")
+final$X <- 2016
+final <- final[,c(3,1,2)]
+colnames(final) <- c("Year", "State", "Turnout")
+final$Year <- as.numeric(final$Year)
+
+write.csv(final,"Data/2016_Turnout.csv",row.names=F)
+
+#other <- as.data.frame(out[[1]])
+
+
+check <- read.csv("Data/Turnout.csv")
+check <- check %>%
+  filter(X %in% seq(1976, 2016, by = 4)) %>%
+  filter(State != "United States") %>%
+  select(X, State, X.4)
+colnames(check) <- c("Year", "State", "Turnout")
+check$Year <- as.numeric(as.character(check$Year))
+total_turnout <- rbind(final,check)
+total_turnout$Turnout <- as.numeric(gsub("%","",total_turnout$Turnout))
+
+old_turnout <- data.frame(State = c("Minnesota", "Utah", "North Dakota", "Wisconsin", "South Dakota", "Maine", "Montana", "Iowa", "Conneticut", "Massachusetts", "Oregon", "Idaho", "Indiana", "Washington", "Rhode Island", "Illinois", "Colorado","Kansas", "Michigan","Wyoming","New Jersey","Missouri", "New Hampshire","Delaware","West Virginia", "Nebraska","Vermont","Ohio","Oklahoma", "Pennsylvania", "New Mexico","Arkansas","New York", "California","Maryland","Florida","Louisiansa", "Tennessee","Alaska","Mississippi","Kentucky", "Virginia","Hawaii","Texas","Alabama","Arizona","Nevada","North Carolina","Georgia","South Carolina", "District of Columbia"), Turnout = c(71.5, 68.4, 67.2, 66.5, 64.1, 63.6, 63.3, 
+                       63.1, 62.7, 61.6, 61.3, 60.6, 60.1, 59.8,
+                       59.6, 59.4, 58.8, 58.8, 58.8, 58.5, 57.7, 
+                       57.3, 57.2, 57.2, 57.1, 56.2, 55.7, 55.1, 
+                       54.8, 54.1, 53.4, 51.1, 50.6, 50.4, 49.3,
+                       49.1, 48.7, 48.6, 48.0, 48.0, 47.9, 46.9, 46.6, 
+                       46.3, 46.3, 46.1, 44.1, 42.9, 42.0, 40.2,
+                       32.2))
+old_turnout$Year <- 1976
+old_turnout <- old_turnout[,c(3,1,2)]
+
+write.csv(old_turnout,"Data/1976_Turnout.csv",row.names=F)
+
+total_turnout <- rbind(total_turnout, old_turnout)
+
+
+# how im reading turnout in shiny app, 
+turnout <- read.csv("Data/Turnout.csv") %>%
+  filter(X %in% seq(1976, 2016, by = 4)) %>%
+  select(X, State, X.4) %>% 
+  rename(year=X,state=State, turnout=X.4)
+turnout_1976 <- read.csv("Data/1976_Turnout.csv")
+turnout_2016 <- read.csv("Data/2016_Turnout.csv") %>% mutate(State=recode(State,!!!c("Dist. of Columbia"="District of Columbia")))
+```
+
+
+#### Andrew Gelman
+
+Andrew Gelman is a professor of statistics and political science at Columbia University. He was one of the first people to publish studies that utilized statistical models to quantify the value of a vote. His work in the field motivated much of this work, and also served as a key data source. He published an article on Slate (https://slate.com/news-and-politics/2016/11/here-are-the-chances-your-vote-matters.html) that listed the probability of a single vote being decisive in the 2012 election.
+
+```{r echo=FALSE, results='hold', fig.cap="Adapted from Gelman's Slate Article"}
+knitr::include_graphics("~/Data/Gelman.jpg")
+```
+
+These were separated by states, with battleground states having higher values, Wisconsin with a 1 in 2 million chance, and dominant states having lower values, Oklahoma with a 1 in 30 billion chance. We used the probability of influencing an election, along with the discretionary budget data, to find the monetary value of a vote based on state and year. It should be noted that we do not replicate Gelman’s statistical models over each election year and utilize just one election year for our analysis. 
+
+```{r}
+#Adapted from: https://slate.com/news-and-politics/2016/11/here-are-the-chances-your-vote-matters.html
+influence = data.frame(state = c(state.abb), 
+                       chance = c(1/7e9,1/100e6,1/40e6, 1/3e9,
+                                 1/7e9,1/1e6, 1/40e6, 1/300e6,
+                                 1/3e6, 1/60e6, 1/1e9, 1/10e9,
+                                 1/1e9, 1/3e9, 1/30e6, 1/1e9,
+                                 1/8e9, 1/5e9, 1/5e6, 1/10e9,
+                                 1/4e9, 1/3e6, 1/10e6, 1/1e9,
+                                 1/1e9, 1/2e9, 1/4e9, 1/2e6,
+                                 1/1e6, 1/400e6, 1/3e6, 1/3e9,
+                                 1/3e6, 1/4e9, 1/20e6, 1/30e9,
+                                 1/40e6, 1/2e6, 1/30e6, 1/100e6,
+                                 1/3e9, 1/3e9, 1/1e9, 1/2e9,
+                                 1/10e9, 1/10e6, 1/200e6, 1/9e9,
+                                 1/2e6, 1/30e9))
+
+
+va <- influence %>%
+  filter(state == "VA")
+va_example <- budg_admin * va$chance * 1e6
+```
+
+
+#### Web Scraping
+
+We web scraped several other datasets to fill in gaps found throughout the process. One of these was the voter turnout from 2016. This was obtained by scraping a table from sos.nh.gov that contained voter turnout in the year 2016. Various other datasets that showed differences in administration’s proposed budgets were also web scraped from https://www.thebalance.com/ . This site contains the breakdown of discretionary spending per year, and contains tables comparing President Trump to President Obama’s (2012) proposed budgets. We also scraped data from govinfo.gov that contained data comparing President Bush’s and President Obama’s (2008) proposed budget. 
+
 
 ```{r Web Scraping}
 # Web Scraping, Potentially not needed
@@ -239,87 +373,6 @@ example %>%
 
 ```
 
-```{r}
-# Contains the mandatory federal spending per year per agency
-budg_all <- read.csv("Data/budget_amount.csv")
-budg_all <- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE)
-colnames(budg_all) = budg_all[2,]
-rownames(budg_all) = budg_all[,1]
-budg_all = budg_all[-c(1,2,33,34),-1]
-cols <- colnames(budg_all)
-rows <- rownames(budg_all)
-budg = as.data.frame(lapply(budg_all, function(x) as.numeric(gsub(",","",x))))
-colnames(budg) <- cols
-rownames(budg) <- rows
-budg <- budg[,-c(1,2)]
-budg_admin <- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE)))
-
-colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])) - 1, 2020)
-
-#########################
-
-```
-
-
-```{r Turnout}
-library(tabulizer)
-location <- 'https://sos.nh.gov/media/ni0j3zb5/1976-2016-presidental-election-highest-office-divided-by-vap.pdf'
-out <- extract_tables(location)
-df <- out[[2]]
-final <- as.data.frame(df)
-final <- final[,-c(1,4,7,10,13,16)]
-final <- data.frame(lapply(final, as.character), stringsAsFactors=FALSE)
-colnames(final) <- final[1,]
-final <- final[-1,]
-
-final <- final[,c(11,12)]
-final <- final %>%
-  filter(`2016` != "United States")
-final$X <- 2016
-final <- final[,c(3,1,2)]
-colnames(final) <- c("Year", "State", "Turnout")
-final$Year <- as.numeric(final$Year)
-
-write.csv(final,"Data/2016_Turnout.csv",row.names=F)
-
-#other <- as.data.frame(out[[1]])
-
-
-check <- read.csv("Data/Turnout.csv")
-check <- check %>%
-  filter(X %in% seq(1976, 2016, by = 4)) %>%
-  filter(State != "United States") %>%
-  select(X, State, X.4)
-colnames(check) <- c("Year", "State", "Turnout")
-check$Year <- as.numeric(as.character(check$Year))
-total_turnout <- rbind(final,check)
-total_turnout$Turnout <- as.numeric(gsub("%","",total_turnout$Turnout))
-
-old_turnout <- data.frame(State = c("Minnesota", "Utah", "North Dakota", "Wisconsin", "South Dakota", "Maine", "Montana", "Iowa", "Conneticut", "Massachusetts", "Oregon", "Idaho", "Indiana", "Washington", "Rhode Island", "Illinois", "Colorado","Kansas", "Michigan","Wyoming","New Jersey","Missouri", "New Hampshire","Delaware","West Virginia", "Nebraska","Vermont","Ohio","Oklahoma", "Pennsylvania", "New Mexico","Arkansas","New York", "California","Maryland","Florida","Louisiansa", "Tennessee","Alaska","Mississippi","Kentucky", "Virginia","Hawaii","Texas","Alabama","Arizona","Nevada","North Carolina","Georgia","South Carolina", "District of Columbia"), Turnout = c(71.5, 68.4, 67.2, 66.5, 64.1, 63.6, 63.3, 
-                       63.1, 62.7, 61.6, 61.3, 60.6, 60.1, 59.8,
-                       59.6, 59.4, 58.8, 58.8, 58.8, 58.5, 57.7, 
-                       57.3, 57.2, 57.2, 57.1, 56.2, 55.7, 55.1, 
-                       54.8, 54.1, 53.4, 51.1, 50.6, 50.4, 49.3,
-                       49.1, 48.7, 48.6, 48.0, 48.0, 47.9, 46.9, 46.6, 
-                       46.3, 46.3, 46.1, 44.1, 42.9, 42.0, 40.2,
-                       32.2))
-old_turnout$Year <- 1976
-old_turnout <- old_turnout[,c(3,1,2)]
-
-write.csv(old_turnout,"Data/1976_Turnout.csv",row.names=F)
-
-total_turnout <- rbind(total_turnout, old_turnout)
-
-
-# how im reading turnout in shiny app, 
-turnout <- read.csv("Data/Turnout.csv") %>%
-  filter(X %in% seq(1976, 2016, by = 4)) %>%
-  select(X, State, X.4) %>% 
-  rename(year=X,state=State, turnout=X.4)
-turnout_1976 <- read.csv("Data/1976_Turnout.csv")
-turnout_2016 <- read.csv("Data/2016_Turnout.csv") %>% mutate(State=recode(State,!!!c("Dist. of Columbia"="District of Columbia")))
-```
-
 
 ```{r Electoral Votes}
 library(rvest)
@@ -332,30 +385,6 @@ electoral_votes <- electoral_votes %>% mutate(year=as.numeric(year)) %>% filter(
 write.csv(electoral_votes,'Data/Electoral_Votes_by_State.csv',row.names=F)
 ```
 
-
-
-```{r}
-#Adapted from: https://slate.com/news-and-politics/2016/11/here-are-the-chances-your-vote-matters.html
-influence = data.frame(state = c(state.abb), 
-                       chance = c(1/7e9,1/100e6,1/40e6, 1/3e9,
-                                 1/7e9,1/1e6, 1/40e6, 1/300e6,
-                                 1/3e6, 1/60e6, 1/1e9, 1/10e9,
-                                 1/1e9, 1/3e9, 1/30e6, 1/1e9,
-                                 1/8e9, 1/5e9, 1/5e6, 1/10e9,
-                                 1/4e9, 1/3e6, 1/10e6, 1/1e9,
-                                 1/1e9, 1/2e9, 1/4e9, 1/2e6,
-                                 1/1e6, 1/400e6, 1/3e6, 1/3e9,
-                                 1/3e6, 1/4e9, 1/20e6, 1/30e9,
-                                 1/40e6, 1/2e6, 1/30e6, 1/100e6,
-                                 1/3e9, 1/3e9, 1/1e9, 1/2e9,
-                                 1/10e9, 1/10e6, 1/200e6, 1/9e9,
-                                 1/2e6, 1/30e9))
-
-
-va <- influence %>%
-  filter(state == "VA")
-va_example <- budg_admin * va$chance * 1e6
-```
 
 
 ```{r Regression}
