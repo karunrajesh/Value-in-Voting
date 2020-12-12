@@ -486,6 +486,28 @@ p <- p + scale_fill_manual(values=c("Democrat"="blue","Republican"="red","Democr
 p
 ```
 
+#### Discretionary Budget Breakdown
+
+When understanding the value of a vote, we thought to first find out the money spent during a president's term. This comes in the form of discretionary spending, which is allocated by a plan proposed by the president that is then approved. The reasoning behind this is so users could better understand where their vote was going. For instance, in 1976 presidency, the legislative branch received a total of \$4,543,000,000, while the Judicial Branch only received \$ 1,996,000,000 in comparison. From this, we can see the breakdown of how each president allocated their discretionary spending, and trends of this spending over time. Below is a table showing the discretionary spending for each agency from 1976 to an estimated amount during the 2020 presidency. 
+
+``` {r }
+head(budg_admin)
+```
+
+From this, we can see that Department of Education's allocated budget increased much faster compared to the Department of Transportation's. We can also see a sharp increase in the Department of Education in 2008, or President Obama's first term. 
+
+```{r}
+example <- budg_admin %>%
+  filter(rownames(budg_admin) %in% c("Department of Education", "Department of Transportation"))
+example <- as.data.frame(t(example))
+colnames(example) = c("Department of Education", "Department of Transportation")
+example$year <- rownames(example)
+example <- melt(example, id.vars=c("year"))
+example %>%
+  ggplot(aes(x=as.numeric(year), y=value, color=variable)) + geom_line() + geom_point() +
+  xlab("Year") + ylab("Discretionary Spending Amount")
+
+```
 
 
 ```{r }
@@ -494,8 +516,12 @@ p
 influence$chance <- as.numeric(influence$chance)
 influence %>%
   filter(state %in% c("AL", "NV", "NC", "VA", "WY")) %>%
-  ggplot(aes(state, chance)) +
+  ggplot(aes(state, chance, colour = state)) +
   geom_bar(stat="identity") 
+
+```
+
+```{r }
 
 # Show value of vote, given state and department, # NEEDS INFLUENCE AND BUDG_ADMIN TABLE BELOW
 va <- influence %>%
