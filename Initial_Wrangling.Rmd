@@ -308,6 +308,19 @@ final_f <- mutate_all(final, function(x) as.numeric(as.character(x)))
 rownames(final_f) = str_match(rows, "^(.*?)\\.")[,2]
 ```
 
+## Exploratory Analysis
+
+We broke down our exploratory analysis into three main portions: 
+
+* Voting Trends Over Time
+
+* Discretionary Budget Breakdown
+
+* Value of a Single Vote
+
+#### Voting Trends Over Time
+
+We first wanted to explore trends in voter turnout over time. 
 ```{r InitalPlots}
 overall_turnout <- presidential_turnout %>%
   group_by(year) %>%
@@ -343,6 +356,32 @@ margin_pres %>%
   geom_point(aes(colour = party), size = 5) +
   scale_color_manual(values=c("blue", "red"))
 ```
+
+```{r}
+us_states <- map_data("state") %>% mutate(state=region)
+turnout <- read.csv("Data/Turnout.csv") %>%
+  filter(X %in% seq(1976, 2016, by = 4)) %>%
+  select(X, State, X.4) %>% 
+  rename(year=X,state=State, turnout=X.4)
+turnout_1976 <- read.csv("Data/1976_Turnout.csv")
+turnout_2016 <- read.csv("Data/2016_Turnout.csv") %>% mutate(State=recode(State,!!!c("Dist. of Columbia"="District of Columbia")))
+presidential_turnout <- turnout_1976 %>% 
+  rename(year=Year,state=State,turnout=Turnout) %>% rbind(turnout) %>% 
+  rbind(turnout_2016 %>% rename(year=Year,state=State,turnout=Turnout)) %>%
+  mutate(year = as.numeric(as.character(year)),turnout=as.numeric(str_replace(turnout,"%",""))) %>%
+  filter(state !='United States')
+
+presidential_turnout_w_map <- presidential_turnout %>%
+  mutate(state = tolower(state)) %>% left_join(us_states,by='state')
+margin_pres_w_map <- margin_pres %>%
+  mutate(state = tolower(state)) %>% left_join(us_states,by='state')
+
+presidential_turnout_w_map %>% filter(year==input$year) %>% mutate(fillcolor=turnout)
+margin_pres_w_map %>% filter(year==input$year) %>% mutate(fillcolor=margin)
+parties_pres_w_map %>% filter(year==input$year) %>% mutate(fillcolor=str_to_title(party))
+
+```
+
 
 ```{r Demographics}
 
@@ -387,7 +426,7 @@ electoral_votes <- electoral_votes %>% mutate(year=as.numeric(year)) %>% filter(
 write.csv(electoral_votes,'Data/Electoral_Votes_by_State.csv',row.names=F)
 ```
 
-
+## ML Analysis
 
 ```{r Regression, eval=FALSE, include=FALSE}
 # 3 variables: Year, Sector, State
@@ -427,4 +466,5 @@ summary(mod)
 #residuals(mod)
 ```
 
+## Final Analysis
 
