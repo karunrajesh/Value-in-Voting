@@ -371,6 +371,8 @@ overall_turnout %>%
 presidential_turnout %>%
   filter(state == "Virginia") %>%
   ggplot(aes(year,totalvotes)) + 
+  ggtitle("Voter Turnout in Virginia") +
+  ylab("Voter Turnout") +
   geom_line() +
   geom_point()
 
@@ -396,6 +398,8 @@ presidential_turnout <- turnout_1976 %>%
 presidential_turnout %>%
   filter(state == "Virginia") %>%
   ggplot(aes(year,turnout)) + 
+  ggtitle("Voter Turnout in Virginia") + 
+  ylab("Voter Turnout (Percentage)") + 
   geom_line() +
   geom_point()
 
@@ -411,6 +415,7 @@ margin_pres %>%
   ggplot(aes(year,margin)) + 
   geom_line() +
   geom_point(aes(colour = party), size = 5) + 
+  ggtitle("Margin of Victory in Virginia")
   scale_color_manual(values=c("blue", "red"))
 ```
 
@@ -639,44 +644,27 @@ p
 For 2016 presidential election, there is definite negative correlation between voters turnout and vote margin results for each state. We will now fit a logistic regression model with linear covariates on historical data for which states were competitive in past presidential elections. The covariates in our regression include US Census variables for these states as well as the election year and voters turnout data for these states. We use election data starting from 2000, as we did not believe that data before this point was representative of possible swing states.
 
 ```{r Regression, fig.width=5,fig.asp = 0.95}
-#Setting up Data:
-# Calc expected value of vote by state by sector
-full_set <- budg_admin %>% 
-  tibble::rownames_to_column("sector") %>% 
-  gather(year,budget,-sector) %>% 
-  left_join(influence,by=character()) %>% #cross join with chance of flipping
-  mutate(value=chance*budget) %>% select(-c("chance","budget")) # expected budget value
-
 # Put in Census variables as features
+# Put in vote margins
 state_name_to_abb <- setNames(state.name,state.abb)
-full_set <- full_set %>% 
+full_set <- margin_pres %>%  
+  left_join(presidential_turnout,by=c('year','state')) %>% 
   mutate(state=recode(state,!!!state_name_to_abb)) %>%
   left_join(demo,by='state')
-
-# Put in vote margins
-full_set <- full_set %>% mutate(year=as.numeric(year)) %>%
-  left_join(margin_pres,by=c('year','state')) %>% 
-  left_join(presidential_turnout,by=c('year','state'))
-
 # make swing state
 full_set <- full_set %>% mutate(swing_state = margin<= .01)
-
 #plan A predict swing state in 2024
 #swing state: vote_margin < .0001
 # predictors: census variables, year (numeric), electoral votes
 set_in <- full_set %>% 
   filter(year >= 2000) %>%
-  select(-sector, - value, -margin, - party, - white_pct) %>% unique()
+  select(-margin, - party, - white_pct) %>% unique()
 swing_clf<- glm(swing_state ~ . - swing_state- state,family=binomial(),data=set_in)
 summary(swing_clf)
-
 roc.1 <- roc(drop_na(set_in)$swing_state, fitted(swing_clf))
-#fitted_vals<-fitted(swing_clf)
-#plot(roc.1,col='red',xlim=c(1,0))
 roc_df <- as.data.frame(cbind(roc.1$sensitivities,roc.1$specificities))
 names(roc_df) <- c('sensitivity','specificity')
 roc_df <- roc_df %>% arrange(desc(sensitivity),desc(specificity))
-
 roc_df %>% 
   ggplot(aes(specificity,sensitivity)) + 
   geom_line(color='darkred') + 
@@ -686,8 +674,8 @@ roc_df %>%
   xlab("Sensitivity") + 
   ylab("Specificity")
 print(auc(roc.1))
-
 ```
+
 We achieve 0.9 for the AUC of our ROC Curve, which means our classifier fitted pretty well onto the dataset. The US Census variables were not as helpful and neither was the year. Now we can forecast into 2024 on which state will be competitive.
 
 ```{r election forcast}
@@ -696,6 +684,8 @@ We achieve 0.9 for the AUC of our ROC Curve, which means our classifier fitted p
 predict_inputs <- set_in %>% 
   filter(year==2016) %>% 
   unique() %>%
+  ungroup() %>%
+  select(-year) %>%
   add_column(year=2024) %>% 
   drop_na()
 
@@ -708,7 +698,7 @@ write.csv(predictions_2024,'Data/2024_swing_state_predictions.csv')
 ```
 
 
-```{r,fig.width=10}
+```{r echo=FALSE, fig.width=10, message=FALSE, warning=FALSE}
 mapdata <- predictions_2024 %>% 
  mutate(state = tolower(state)) %>% 
   left_join(us_states,by='state')
