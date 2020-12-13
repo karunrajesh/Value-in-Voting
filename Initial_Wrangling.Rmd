@@ -561,13 +561,13 @@ line_data %>%
 ```
 
 
-## ML Analysis
-2024 Competitive State prediction.
-We want to forecast which state will become a competitive state in the upcoming election. A state is defined to be competitive when the winning candidate only wins 1% or less of the total number of votes in that state. We start by visually assessing the relationship between vote margins and voter turnout each state using a bubble plot.
+## ML Analysis - 2024 Competitive State prediction
 
-```{r BubblePlot,out.width='100%',out.height='100%'}
+We want to forecast which state will become a competitive state in the upcoming election. A state is defined to be competitive when the winning candidate only wins 1% or less of the total number of votes in that state. We start by visually assessing the relationship between vote margins and voter turnout each state using a bubble plot, where the size of the bubble is represented by the number of electoral votes that state have. We webscraped the number of electoral votes for each state historically since 1976 to 2016. 
+
+```{r ElectoralVotes}
 ### Relationship between  over Time
-#Webcrape historical number of electoral votes by state by year
+# Webcrape historical number of electoral votes by state by year
 url <- "https://www.270towin.com/state-electoral-vote-history/"
 electoral_votes <- read_html(url) %>% html_nodes("table") %>% html_table %>% .[[1]] 
 electoral_votes <- electoral_votes %>% gather(year,nvotes,-1)
@@ -575,6 +575,12 @@ names(electoral_votes) <- c('state','year','nvotes')
 electoral_votes <- electoral_votes %>% mutate(year=as.numeric(year)) %>% filter(year %in% seq(1976,2016,4))
 write.csv(electoral_votes,'Data/Electoral_Votes_by_State.csv',row.names=F)
 
+```
+
+Now we have all data necessary for our bubble chart:
+
+```{r BubblePlot,out.width='100%',out.height='100%'}
+### Relationship between  over Time
 electoral_votes <- read.csv('Data/Electoral_Votes_by_State.csv')
 pres_turnout_and_margin <- presidential_turnout %>% 
   left_join(margin_pres,by=c('state','year')) %>%
@@ -598,21 +604,20 @@ p <- scatter_data %>%
   ylim(c(color_scale_min['Voter Turnout'],color_scale_max['Voter Turnout'])) +
   # Set x and y axis limits to keep the same for each year
   # Make the legend titles nicer
-  scale_color_manual(name='Winning Part',values=c("Democrat"="blue","Republican"="red","Democratic-Farmer-Labor"="darkgreen")) +
+  scale_color_manual(name='Winning Party',values=c("Democrat"="blue","Republican"="red","Democratic-Farmer-Labor"="darkgreen")) +
   scale_size_continuous(name = "# of Electoral Votes",range=c(2,15)) +
   
   # Change the title of the plot for each year
   # Returns a character vector containing a formatted combination 
   # of text and variable values
-  ggtitle(sprintf("Turnout vs Margin in %d", year_scatter)) +
+  ggtitle(sprintf("Turnout vs Margin in %d Presidential Election", year_scatter)) +
   theme_bw() 
 
 p
 ```
+For 2016 presidential election, there is definite negative correlation between voters turnout and vote margin results for each state. We will now fit a logistic regression model with linear covariates on historical data for which states were competitive in past presidential elections. The covariates in our regression include US Census variables for these states as well as the election year and voters turnout data for these states.
 
-
-
-```{r Regression, eval=FALSE, include=FALSE}
+```{r Regression, fig.width=5,fig.asp = 0.95}
 #Setting up Data:
 # Calc expected value of vote by state by sector
 full_set <- budg_admin %>% 
@@ -631,15 +636,15 @@ full_set <- full_set %>%
 full_set <- full_set %>% mutate(year=as.numeric(year)) %>%
   left_join(margin_pres,by=c('year','state')) %>% 
   left_join(presidential_turnout,by=c('year','state'))
-head(margin_pres)
+
 # make swing state
 full_set <- full_set %>% mutate(swing_state = margin<= .01)
 
 #plan A predict swing state in 2024
 #swing state: vote_margin < .0001
 # predictors: census variables, year (numeric), electoral votes
-set_in <- full_set %>% select(-sector, - value) %>% unique()
-swing_clf<- glm(swing_state ~ . - swing_state - state -margin - party - white_pct,family=binomial(),data=set_in)
+set_in <- full_set %>% select(-sector, - value, -margin, - party, - white_pct) %>% unique()
+swing_clf<- glm(swing_state ~ . - swing_state- state,family=binomial(),data=set_in)
 summary(swing_clf)
 
 roc.1 <- roc(drop_na(set_in)$swing_state, fitted(swing_clf))
@@ -647,8 +652,17 @@ roc.1 <- roc(drop_na(set_in)$swing_state, fitted(swing_clf))
 #plot(roc.1,col='red',xlim=c(1,0))
 roc_df <- as.data.frame(cbind(roc.1$sensitivities,roc.1$specificities))
 names(roc_df) <- c('sensitivity','specificity')
-roc_df %>% arrange(desc(sensitivity),desc(specificity))
-roc_df %>% ggplot(aes(specificity,sensitivity)) + geom_line(color='darkred') + geom_abline(aes(slope=1,intercept=1),linetype='dashed') + xlim(1,0)
+roc_df <- roc_df %>% arrange(desc(sensitivity),desc(specificity))
+
+roc_df %>% 
+  ggplot(aes(specificity,sensitivity)) + 
+  geom_line(color='darkred') + 
+  geom_abline(aes(slope=1,intercept=1),linetype='dashed') + 
+  xlim(1,0) +
+  ggtitle("Reciever Operating Characteristic Curve") +
+  xlab("Sensitivity") + 
+  ylab("Specificity")
+print(auc(roc.1))
 
 # plan B: value of your vote based on year and sector in 2024
 # mod <- lm(value ~ year + sector) # plan B
@@ -656,6 +670,24 @@ roc_df %>% ggplot(aes(specificity,sensitivity)) + geom_line(color='darkred') + g
 # summary(mod)
 #residuals(mod)
 ```
+We achieve 0.8 for the AUC of our ROC Curve, which means our classifier fitted pretty well onto the dataset. Upon looking at the summary of our regression output, only voters turnout seems to be a significant predictor in predicting if the state would be competitive or not at the 0.05 level. The US Census variables were not as helpful and neither was the year. Now we can forecast into 2024 on which state will be competitive.
+
+```{r election forcast}
+
+# use latest turnout
+chosen_states = c('California','Idaho','Michigan','Florida','New York')
+predict_inputs <- set_in %>% 
+  filter(state %in% chosen_states & year==2016) %>% 
+  unique() %>%
+  add_column(year=2024) %>% 
+  drop_na()
+
+predictions_2024 <- predict(swing_clf, newdata = predict_inputs, type="response")
+names(predictions_2024) <- chosen_states
+predictions_2024
+
+```
+
 
 ## Final Analysis
 
