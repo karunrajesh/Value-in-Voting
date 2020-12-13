@@ -724,3 +724,10 @@ p<- mapdata %>% ggplot(aes(x = long, y = lat, fill = swing_prob, group = group))
 p
 ```
 
+## Final Analysis
+
+The goal of this project was to understand more about the landscape of voting and how much it impacts us. Our initial exlporatory analysis allowed us to understand more about the nuances within each presidenital election like voter turnout, margins of victory, demographics, and results of each election over the last 40 years. This gave us, and hopefully the user, how elections have changed over time and where they are trending. 
+
+We then moved onto the value of a single vote. This started with understanding the probability of a single vote overturning an election. We showed this through Andrew Gelman's probability table that gave such a probability for each state. This was then coupled with the discretionary budget throughout a president's term to find the value in a single vote. We hoped to communicate that voting can be viewed as more than just a civic duty, and how much impact it had in our lives. By illustrating that a single vote in Virginia resulted in expected value of $35,000 just for one agency, we start to understand just how much value and power comes with a vote. We also encouraged users to find out more about the value of a vote and trends in voting with our Shiny app. 
+
+We finally extended our analysis looking forward to the 2024 election, and seeing which state is expected to be the most competitive. By finding the most competitive state, the value of the vote in that state drastically increases exponentially. Our model showed that Florida and Maine were expected to be the most competive states in the 2024 election. This does not mean that just competitive states are the only ones worth voting in. There are several other levels of elections (senate, district) that were not looked at, where this same type of analysis can be applied. A vote holds so much value on the national, regional, and local level. We should take pride in the (literal) amount our vote can bring.
