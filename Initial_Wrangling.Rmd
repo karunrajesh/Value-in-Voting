@@ -50,6 +50,7 @@ Voting has become an increasingly important topic, especially in the United Stat
 
 On a more personal note, we have seen many different organizations like the NFL, NBA, Facebook, and others continuously push voting ad-campaigns like never before. It immediately made us think about the value of our singular votes and how much change we can effect with just that one action. We also wanted to provide an alternative view to the case of voting, besides the worn out “civic duty” argument, to peers around us who did not see reason in voting.
 
+Originally, we wanted to find the value of a vote at different election levels (presidential, senate, etc.); however, we found this to not be as effective in communicating the value of a vote. Thus, we focused solely on the presidential election level. 
 
 ## Data Sources:
 
@@ -59,32 +60,16 @@ In this project, we use three main data sources, supplemented by other various d
 
 The MIT Election Lab is an online repository that stores past years (up to 1976) of election data at various levels (senate, presidential, etc.) These datasets are continuously updated each year, with new elections. Data in this repository is thoroughly cleaned, such that users can perform their own analysis directly after downloading. This dataset was used to obtain the voter turnout for each state at both the presidential and senate level (1976 - 2016). It lists not only the winner’s vote total for each state, but also other candidates' vote totals as well. From this dataset, we were able to derive voter turnout by state, margins of victory by state, and flipping of states between elections from 1976 to 2016. 
 
-```{r}
+```{r warning=FALSE}
 presidential <- read.csv("Data/1976-2016-president.csv")
 senate <- read.csv("Data/1976-2018-senate.csv")
 
 head(presidential)
 ```
 
-We also used an analysis dataset published from this repository. This dataset consisted of the voter demographics in each county of the United States for the 2012 and 2016 presidential elections. It included voting breakdowns by race, gender, age, level of education, level of employment, and environment. We used this to understand more about the voting population, as well as, predict the value of a vote. 
+We then took the presidential and senate dataset and subset it into various other datasets. The dataframe below holds the voter turnout over time, aggregated by state and year. 
 
-```{r}
-context <- read.csv("Data/election-context-2018.csv")
-head(context)
-```
-
-
-```{r}
-#Analysis 1
-presidential <- read.csv("Data/1976-2016-president.csv")
-senate <- read.csv("Data/1976-2018-senate.csv")
-context <- read.csv("Data/election-context-2018.csv")
-
-context_state<- context %>%
-  group_by(state) %>%
-  dplyr::select(-county) %>%
-  summarise_each(funs(mean))
-
+```{r warning=FALSE}
 #Voter Turnout Over Time
 senate_turnout <- senate %>%
   group_by(year, state) %>%
@@ -94,7 +79,11 @@ presidential_turnout <- presidential %>%
   group_by(year, state) %>%
   filter(row_number()==1) %>%
   dplyr::select(year, state, totalvotes)
+```
 
+The dataframe below holds the margin of victory for each presidential race, aggregated by state and year. 
+
+```{r warning=FALSE}
 #Margins of Victory
 margin_pres <- presidential %>%
   group_by(year,state) %>%
@@ -109,14 +98,17 @@ margin_sen <- senate %>%
   filter(row_number() %in% c(1,2)) %>%
   dplyr::select(year, state, candidate, candidatevotes, totalvotes, party) %>%
   summarize(margin = mean((candidatevotes[1]-candidatevotes[2])/totalvotes), party = party[1])
+```
 
+The dataframe below holds the party that won for each presidential race, aggregated by state and year. 
+
+```{r warning=FALSE}
 # Switching Parties
 parties_pres <- presidential %>%
   group_by(year,state) %>%
   arrange(desc(candidatevotes), .by_group = TRUE) %>%
   filter(row_number() == 1) %>%
   dplyr::select(year, state, candidate, party)
-# Possibly list how many times a state switched over time
 parties_sen <- senate %>%
   group_by(year,state) %>%
   arrange(desc(candidatevotes), .by_group = TRUE) %>%
@@ -125,6 +117,21 @@ parties_sen <- senate %>%
 
 ```
 
+We also used an analysis dataset published from this repository. This dataset consisted of the voter demographics in each county of the United States for the 2012 and 2016 presidential elections. It included voting breakdowns by race, gender, age, level of education, level of employment, and environment. We used this to understand more about the voting population, as well as, predict the value of a vote. 
+
+```{r warning=FALSE}
+context <- read.csv("Data/election-context-2018.csv")
+head(context)
+```
+
+We then aggregated this demographic data by state, as it was currently separated by county.
+
+```{r}
+context_state<- context %>%
+  group_by(state) %>%
+  dplyr::select(-county) %>%
+  summarise_each(funs(mean))
+```
 
 #### White House Office of Management and Budget
 
@@ -132,7 +139,7 @@ The White House’s Office of Management and Budget website contains historical 
 
 We aggregated this data over each president’s term to get the total discretionary spending per term. This was then used to find the monetary value of one person’s vote in a given state for the given election year. 
 
-```{r}
+```{r warning=FALSE}
 # Contains the mandatory federal spending per year per agency
 budg_all <- read.csv("Data/budget_amount.csv")
 budg_all <- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE)
@@ -339,7 +346,7 @@ head(demo)
 
 We first wanted to explore trends in voter turnout over time. The plots below show the overall voter turnout from 1976 to 2016, as well as state level voter turnout. In our shiny app, we allow the user to select up to six states to display the voter turnout. 
 
-```{r InitalPlots}
+```{r InitalPlots, echo=FALSE, message=FALSE, warning=FALSE}
 overall_turnout <- presidential_turnout %>%
   group_by(year) %>%
   summarize(total = sum(totalvotes))
