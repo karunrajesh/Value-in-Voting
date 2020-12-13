@@ -650,7 +650,9 @@ full_set <- full_set %>% mutate(swing_state = margin<= .01)
 #plan A predict swing state in 2024
 #swing state: vote_margin < .0001
 # predictors: census variables, year (numeric), electoral votes
-set_in <- full_set %>% select(-sector, - value, -margin, - party, - white_pct) %>% unique()
+set_in <- full_set %>% 
+  filter(year >= 2000) %>%
+  select(-sector, - value, -margin, - party, - white_pct) %>% unique()
 swing_clf<- glm(swing_state ~ . - swing_state- state,family=binomial(),data=set_in)
 summary(swing_clf)
 
@@ -677,7 +679,7 @@ print(auc(roc.1))
 # summary(mod)
 #residuals(mod)
 ```
-We achieve 0.8 for the AUC of our ROC Curve, which means our classifier fitted pretty well onto the dataset. Upon looking at the summary of our regression output, only voters turnout seems to be a significant predictor in predicting if the state would be competitive or not at the 0.05 level. The US Census variables were not as helpful and neither was the year. Now we can forecast into 2024 on which state will be competitive.
+We achieve 0.9 for the AUC of our ROC Curve, which means our classifier fitted pretty well onto the dataset. Upon looking at the summary of our regression output, only voters turnout seems to be a significant predictor in predicting if the state would be competitive or not at the 0.05 level. The US Census variables were not as helpful and neither was the year. Now we can forecast into 2024 on which state will be competitive.
 
 ```{r election forcast}
 
@@ -697,7 +699,7 @@ write.csv(predictions_2024,'Data/2024_swing_state_predictions.csv')
 ```
 
 
-```{r, fig.width=10}
+```{r,fig.width=10}
 mapdata <- predictions_2024 %>% 
  mutate(state = tolower(state)) %>% 
   left_join(us_states,by='state')
@@ -721,6 +723,4 @@ p<- mapdata %>% ggplot(aes(x = long, y = lat, fill = swing_prob, group = group))
                                   palette="Spectral")
 p
 ```
-
-## Final Analysis
 
