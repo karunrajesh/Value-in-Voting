@@ -310,7 +310,7 @@ rownames(final_f) = str_match(rows, "^(.*?)\\.")[,2]
 
 ## Exploratory Analysis
 
-We broke down our exploratory analysis into four main portions: 
+We broke down our exploratory analysis into five main portions: 
 
 * Demographics
 
