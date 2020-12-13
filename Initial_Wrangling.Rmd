@@ -13,11 +13,10 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
-library(reshape2)
 library(stringr)
 library(tabulizer)
 library(rvest)
-
+library(pROC)
 ```
 
 ## Introduction and Overview
@@ -147,7 +146,6 @@ colnames(budg) <- cols
 rownames(budg) <- rows
 budg <- budg[,-c(1,2)]
 budg_admin <- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE)))
-
 colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])) - 1, 2020)
 
 ```
@@ -159,7 +157,6 @@ The United States Election Project is an information source that houses election
 Show missing 1976 and 2016 columns and then explain later how it was filled in with web scraping
 
 ```{r Turnout}
-
 location <- 'https://sos.nh.gov/media/ni0j3zb5/1976-2016-presidental-election-highest-office-divided-by-vap.pdf'
 out <- extract_tables(location)
 df <- out[[2]]
@@ -178,8 +175,6 @@ colnames(final) <- c("Year", "State", "Turnout")
 final$Year <- as.numeric(final$Year)
 
 write.csv(final,"Data/2016_Turnout.csv",row.names=F)
-
-#other <- as.data.frame(out[[1]])
 
 
 check <- read.csv("Data/Turnout.csv")
@@ -485,7 +480,7 @@ p<- mapdata %>% ggplot(aes(x = long, y = lat, fill = fillcolor, group = group)) 
             plot.title = element_text(hjust = 0.5)
       ) 
 
-p <- p + scale_fill_manual(values=c("Democrat"="blue","Republican"="red","Democratic-Farmer-Labor"="darkgreen"))
+p <- p + scale_fill_manual(name='Party',values=c("Democrat"="blue","Republican"="red","Democratic-Farmer-Labor"="darkgreen"))
 p
 ```
 
@@ -515,16 +510,23 @@ head(budg_admin)
 From the graph below, we can see that Department of Education's allocated budget increased much faster compared to the Department of Transportation's. We can also see a sharp increase in the Department of Education in 2008, or President Obama's first term. 
 
 ```{r}
-example <- budg_admin %>%
-  filter(rownames(budg_admin) %in% c("Department of Education", "Department of Transportation"))
-example <- as.data.frame(t(example))
-colnames(example) = c("Department of Education", "Department of Transportation")
-example$year <- rownames(example)
-example <- melt(example, id.vars=c("year"))
-example %>%
-  ggplot(aes(x=as.numeric(year), y=value, color=variable)) + geom_line() + geom_point() +
-  xlab("Year") + ylab("Discretionary Spending Amount")
+gov_agencies <- c("Department of Education", "Department of Transportation")
+line_data <- budg_admin %>% 
+  .[gov_agencies,] %>% 
+  tibble::rownames_to_column("agency") %>% 
+  gather(year,budget,-agency) %>%
+  mutate(year = as.numeric(year))
 
+line_data %>%
+  ggplot(aes(x=as.numeric(year), y=budget, color=agency)) + 
+  geom_line() +
+  geom_point() +
+  xlab("Year") + 
+  ylab("Discretionary Spending Amount") +
+  ggtitle('Discretionary Spending Amount Over Time') +
+  theme(legend.position="bottom",
+        # center title
+        plot.title = element_text(hjust = 0.5))
 ```
 
 #### Value of a Vote
@@ -536,36 +538,81 @@ $$E[Value] = Discretionary Spending * P(Vote|State)$$
 We can then plot this value for each presidency term from 1976 to 2016 for a given state and agency to find the expected value of a vote. As can be seen in the plot below, the expected value of a single vote in Virginia for the 2008 presidency was greater than $35,000 towards the Department of Education. This is an incredibly large amount a single vote holds and shows just how much power a single vote can contribute. 
 
 ```{r }
-va <- influence %>%
-  filter(state == "VA")
-va_example <- budg_admin * va$chance * 1e6
-example <- va_example %>%
-  filter(rownames(va_example) %in% c("Department of Education", "Department of Transportation"))
-example <- as.data.frame(t(example))
-colnames(example) = c("Department of Education", "Department of Transportation")
-example$year <- rownames(example)
-example <- melt(example, id.vars=c("year"))
-example %>%
-  ggplot(aes(x=as.numeric(year), y=value, color=variable)) + geom_line() + geom_point() +
-  xlab("Year") + ylab("Value of Vote (in dollars)")
+gov_agencies <- c("Department of Education", "Department of Transportation")
+chosen_state <- "VA"
+influence %>% filter(state == chosen_state)
+line_data <- (influence %>% filter(state == chosen_state) %>% 
+      .$chance * budg_admin *1e6) %>% 
+      .[gov_agencies,] %>% 
+      tibble::rownames_to_column("agency") %>%
+      gather(year,budget,-agency)
+
+
+line_data %>%
+  ggplot(aes(x=as.numeric(year), y=budget, color=agency)) + 
+  geom_line() +
+  geom_point() +
+  xlab("Year") + 
+  ylab("Value of Vote (in dollars)") +
+  ggtitle(sprintf('Discretionary Spending Amount Over Time for %s',chosen_state)) +
+  theme(legend.position="bottom",
+        # center title
+        plot.title = element_text(hjust = 0.5))
 ```
 
 
-```{r Electoral Votes}
-library(rvest)
-#Scrape historical number of electoral votes by state by year
+## ML Analysis
+2024 Competitive State prediction.
+We want to forecast which state will become a competitive state in the upcoming election. A state is defined to be competitive when the winning candidate only wins 1% or less of the total number of votes in that state. We start by visually assessing the relationship between vote margins and voter turnout each state using a bubble plot.
+
+```{r BubblePlot,out.width='100%',out.height='100%'}
+### Relationship between  over Time
+#Webcrape historical number of electoral votes by state by year
 url <- "https://www.270towin.com/state-electoral-vote-history/"
 electoral_votes <- read_html(url) %>% html_nodes("table") %>% html_table %>% .[[1]] 
 electoral_votes <- electoral_votes %>% gather(year,nvotes,-1)
 names(electoral_votes) <- c('state','year','nvotes')
 electoral_votes <- electoral_votes %>% mutate(year=as.numeric(year)) %>% filter(year %in% seq(1976,2016,4))
 write.csv(electoral_votes,'Data/Electoral_Votes_by_State.csv',row.names=F)
+
+electoral_votes <- read.csv('Data/Electoral_Votes_by_State.csv')
+pres_turnout_and_margin <- presidential_turnout %>% 
+  left_join(margin_pres,by=c('state','year')) %>%
+  left_join(electoral_votes,by=c('state','year'))
+
+year_scatter <- 2016
+scatter_data<- pres_turnout_and_margin %>% filter(year==year_scatter) %>% 
+                           left_join(influence,by='state') %>% 
+                           mutate(party=str_to_title(party))
+
+color_scale_min <- c('Margins'= min(margin_pres$margin),'Voter Turnout'=min(presidential_turnout$turnout))
+color_scale_max <- c('Margins'= max(margin_pres$margin),'Voter Turnout'=max(presidential_turnout$turnout))
+
+
+p <- scatter_data %>%
+  ggplot(aes(margin, turnout, color = party, size=nvotes)) +
+  geom_point(alpha = 0.5) +
+  xlab("Margin") +
+  ylab("Turnout") +
+  scale_x_log10(limits=c(color_scale_min['Margins'],color_scale_max['Margins'])) +
+  ylim(c(color_scale_min['Voter Turnout'],color_scale_max['Voter Turnout'])) +
+  # Set x and y axis limits to keep the same for each year
+  # Make the legend titles nicer
+  scale_color_manual(name='Winning Part',values=c("Democrat"="blue","Republican"="red","Democratic-Farmer-Labor"="darkgreen")) +
+  scale_size_continuous(name = "# of Electoral Votes",range=c(2,15)) +
+  
+  # Change the title of the plot for each year
+  # Returns a character vector containing a formatted combination 
+  # of text and variable values
+  ggtitle(sprintf("Turnout vs Margin in %d", year_scatter)) +
+  theme_bw() 
+
+p
 ```
 
-## ML Analysis
+
 
 ```{r Regression, eval=FALSE, include=FALSE}
-library(pROC)
 #Setting up Data:
 # Calc expected value of vote by state by sector
 full_set <- budg_admin %>% 
