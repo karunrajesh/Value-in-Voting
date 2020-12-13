@@ -125,7 +125,7 @@ head(context)
 
 We then aggregated this demographic data by state, as it was currently separated by county.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 context_state<- context %>%
   group_by(state) %>%
   dplyr::select(-county) %>%
@@ -154,35 +154,15 @@ budg <- budg[,-c(1,2)]
 budg_admin <- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE)))
 colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])) - 1, 2020)
 
+head(budg_admin)
+
 ```
 
 #### United States Election Project
 
-The United States Election Project is an information source that houses election data for each state over the past 50 years of elections. This source was mainly used to obtain the voter turnout as a percentage of the total eligible voters. This was combined with two other sources to obtain the full voter turnout per state from the 1976 to 2016 presidential election. 
-
-Show missing 1976 and 2016 columns and then explain later how it was filled in with web scraping
+The United States Election Project is an information source that houses election data for each state over the past 50 years of elections. This source was mainly used to obtain the voter turnout as a percentage of the total eligible voters. As can be seen, we do not have data from the 1976 and 2016 election. This dataset was combined with two other sources that were web scraped to obtain the full voter turnout per state from the 1976 to 2016 presidential election. 
 
 ```{r Turnout}
-location <- 'https://sos.nh.gov/media/ni0j3zb5/1976-2016-presidental-election-highest-office-divided-by-vap.pdf'
-out <- extract_tables(location)
-df <- out[[2]]
-final <- as.data.frame(df)
-final <- final[,-c(1,4,7,10,13,16)]
-final <- data.frame(lapply(final, as.character), stringsAsFactors=FALSE)
-colnames(final) <- final[1,]
-final <- final[-1,]
-
-final <- final[,c(11,12)]
-final <- final %>%
-  filter(`2016` != "United States")
-final$X <- 2016
-final <- final[,c(3,1,2)]
-colnames(final) <- c("Year", "State", "Turnout")
-final$Year <- as.numeric(final$Year)
-
-write.csv(final,"Data/2016_Turnout.csv",row.names=F)
-
-
 check <- read.csv("Data/Turnout.csv")
 check <- check %>%
   filter(X %in% seq(1976, 2016, by = 4)) %>%
@@ -190,32 +170,10 @@ check <- check %>%
   select(X, State, X.4)
 colnames(check) <- c("Year", "State", "Turnout")
 check$Year <- as.numeric(as.character(check$Year))
-total_turnout <- rbind(final,check)
+total_turnout <- check
 total_turnout$Turnout <- as.numeric(gsub("%","",total_turnout$Turnout))
+head(total_turnout)
 
-old_turnout <- data.frame(State = c("Minnesota", "Utah", "North Dakota", "Wisconsin", "South Dakota", "Maine", "Montana", "Iowa", "Conneticut", "Massachusetts", "Oregon", "Idaho", "Indiana", "Washington", "Rhode Island", "Illinois", "Colorado","Kansas", "Michigan","Wyoming","New Jersey","Missouri", "New Hampshire","Delaware","West Virginia", "Nebraska","Vermont","Ohio","Oklahoma", "Pennsylvania", "New Mexico","Arkansas","New York", "California","Maryland","Florida","Louisiansa", "Tennessee","Alaska","Mississippi","Kentucky", "Virginia","Hawaii","Texas","Alabama","Arizona","Nevada","North Carolina","Georgia","South Carolina", "District of Columbia"), Turnout = c(71.5, 68.4, 67.2, 66.5, 64.1, 63.6, 63.3, 
-                       63.1, 62.7, 61.6, 61.3, 60.6, 60.1, 59.8,
-                       59.6, 59.4, 58.8, 58.8, 58.8, 58.5, 57.7, 
-                       57.3, 57.2, 57.2, 57.1, 56.2, 55.7, 55.1, 
-                       54.8, 54.1, 53.4, 51.1, 50.6, 50.4, 49.3,
-                       49.1, 48.7, 48.6, 48.0, 48.0, 47.9, 46.9, 46.6, 
-                       46.3, 46.3, 46.1, 44.1, 42.9, 42.0, 40.2,
-                       32.2))
-old_turnout$Year <- 1976
-old_turnout <- old_turnout[,c(3,1,2)]
-
-write.csv(old_turnout,"Data/1976_Turnout.csv",row.names=F)
-
-total_turnout <- rbind(total_turnout, old_turnout)
-
-
-# how im reading turnout in shiny app, 
-turnout <- read.csv("Data/Turnout.csv") %>%
-  filter(X %in% seq(1976, 2016, by = 4)) %>%
-  select(X, State, X.4) %>% 
-  rename(year=X,state=State, turnout=X.4)
-turnout_1976 <- read.csv("Data/1976_Turnout.csv")
-turnout_2016 <- read.csv("Data/2016_Turnout.csv") %>% mutate(State=recode(State,!!!c("Dist. of Columbia"="District of Columbia")))
 ```
 
 
@@ -255,11 +213,11 @@ va_example <- budg_admin * va$chance * 1e6
 
 #### Web Scraping
 
-We web scraped several other datasets to fill in gaps found throughout the process. One of these was the voter turnout from 2016. This was obtained by scraping a table from sos.nh.gov that contained voter turnout in the year 2016. Various other datasets that showed differences in administration’s proposed budgets were also web scraped from https://www.thebalance.com/ . This site contains the breakdown of discretionary spending per year, and contains tables comparing President Trump to President Obama’s (2012) proposed budgets. We also scraped data from govinfo.gov that contained data comparing President Bush’s and President Obama’s (2008) proposed budget. 
+We web scraped several other datasets to fill in gaps found throughout the process. One of these was the voter turnout from 2016. This was obtained by scraping a table from sos.nh.gov that contained voter turnout in the year 2016. Various other datasets that showed differences in administration’s proposed budgets were also web scraped from https://www.thebalance.com/ . This site contains the breakdown of discretionary spending per year, and contains tables comparing President Trump to President Obama’s (2012) proposed budgets. We also scraped data from govinfo.gov that contained data comparing President Bush’s and President Obama’s (2008) proposed budget. We realized that it would not be efficient to download each year as a separate web scraped table, so we replaced these with the White House OMB data. 
 
 
 ```{r Web Scraping}
-# Web Scraping, Potentially not needed
+# Web Scraping, NOT USED SINCE OMB HAS SAME INFORMATION
 clean_table <- function(df){
   rownames(df) <- df[,1]
   df[,1] <- NULL
@@ -274,25 +232,18 @@ get_table <- function(url, i){
   return(budget)
 }
 
-budget_2020 <- get_table("https://www.thebalance.com/fy-2020-federal-budget-summary-of-revenue-and-spending-4797868", 1)
-
-
-
 turl <- "https://www.thebalance.com/how-trump-amended-obama-budget-4128986"
 h   <- read_html(turl)
 tab <- h %>% html_nodes("table")
 try <- h %>% html_nodes("table") %>% .[1]
 budget_comp <- try %>% html_table %>% .[[1]] 
 
-url_2013 <- "https://www.thebalance.com/fy-2013-u-s-federal-budget-and-spending-3306319"
-h1 <- read_html(url_2013)
-try_2013 <- h1 %>% html_nodes("table") %>% .[2]
-budget_2013 <- try_2013 %>% html_table %>% .[[1]] 
-
-
-budget_2013 <- clean_table(budget_2013)
 budget_comp <- clean_table(budget_comp)
 
+head(budget_comp)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 # Location of WARN notice pdf file
 location <- 'https://www.govinfo.gov/content/pkg/BUDGET-2009-BUD/pdf/BUDGET-2009-BUD-31.pdf'
 
@@ -307,6 +258,63 @@ final[,1] <- NULL
 colnames(final) <- c("2001", "2008", "2009")
 final_f <- mutate_all(final, function(x) as.numeric(as.character(x)))
 rownames(final_f) = str_match(rows, "^(.*?)\\.")[,2]
+head(final_f)
+```
+
+In order to find the full voter turnout from 1976 to 2016 presidential elections, we had to web scrape the voter turnout for the 2016 election. We then manually input the data for the 1976 presidential election voter turnout. 
+
+```{r }
+location <- 'https://sos.nh.gov/media/ni0j3zb5/1976-2016-presidental-election-highest-office-divided-by-vap.pdf'
+out <- extract_tables(location)
+df <- out[[2]]
+final <- as.data.frame(df)
+final <- final[,-c(1,4,7,10,13,16)]
+final <- data.frame(lapply(final, as.character), stringsAsFactors=FALSE)
+colnames(final) <- final[1,]
+final <- final[-1,]
+
+final <- final[,c(11,12)]
+final <- final %>%
+  filter(`2016` != "United States")
+final$X <- 2016
+final <- final[,c(3,1,2)]
+colnames(final) <- c("Year", "State", "Turnout")
+final$Year <- as.numeric(final$Year)
+
+write.csv(final,"Data/2016_Turnout.csv",row.names=F)
+
+old_turnout <- data.frame(State = c("Minnesota", "Utah", "North Dakota", "Wisconsin", "South Dakota", "Maine", "Montana", "Iowa", "Conneticut", "Massachusetts", "Oregon", "Idaho", "Indiana", "Washington", "Rhode Island", "Illinois", "Colorado","Kansas", "Michigan","Wyoming","New Jersey","Missouri", "New Hampshire","Delaware","West Virginia", "Nebraska","Vermont","Ohio","Oklahoma", "Pennsylvania", "New Mexico","Arkansas","New York", "California","Maryland","Florida","Louisiansa", "Tennessee","Alaska","Mississippi","Kentucky", "Virginia","Hawaii","Texas","Alabama","Arizona","Nevada","North Carolina","Georgia","South Carolina", "District of Columbia"), Turnout = c(71.5, 68.4, 67.2, 66.5, 64.1, 63.6, 63.3, 
+                       63.1, 62.7, 61.6, 61.3, 60.6, 60.1, 59.8,
+                       59.6, 59.4, 58.8, 58.8, 58.8, 58.5, 57.7, 
+                       57.3, 57.2, 57.2, 57.1, 56.2, 55.7, 55.1, 
+                       54.8, 54.1, 53.4, 51.1, 50.6, 50.4, 49.3,
+                       49.1, 48.7, 48.6, 48.0, 48.0, 47.9, 46.9, 46.6, 
+                       46.3, 46.3, 46.1, 44.1, 42.9, 42.0, 40.2,
+                       32.2))
+old_turnout$Year <- 1976
+old_turnout <- old_turnout[,c(3,1,2)]
+
+write.csv(old_turnout,"Data/1976_Turnout.csv",row.names=F)
+
+total_turnout <- rbind(total_turnout, old_turnout)
+
+
+# how we are reading turnout in shiny app, 
+turnout <- read.csv("Data/Turnout.csv") %>%
+  filter(X %in% seq(1976, 2016, by = 4)) %>%
+  select(X, State, X.4) %>% 
+  rename(year=X,state=State, turnout=X.4)
+turnout_1976 <- read.csv("Data/1976_Turnout.csv")
+turnout_2016 <- read.csv("Data/2016_Turnout.csv") %>% mutate(State=recode(State,!!!c("Dist. of Columbia"="District of Columbia")))
+
+pr_turnout <- turnout_1976 %>% 
+  rename(year=Year,state=State,turnout=Turnout) %>% rbind(turnout) %>% 
+  rbind(turnout_2016 %>% rename(year=Year,state=State,turnout=Turnout)) %>%
+  mutate(year = as.numeric(as.character(year)),turnout=as.numeric(str_replace(turnout,"%",""))) %>%
+  filter(state !='United States')
+
+head(pr_turnout)
+
 ```
 
 ## Exploratory Analysis
@@ -330,6 +338,7 @@ We broke down our exploratory analysis into five main portions:
 
 #### Demographics
 
+Here we show the demographics for the 2016 election:
 
 ```{r Demographics}
 
@@ -541,12 +550,18 @@ We now move into the actual monetary value of a vote. Given the discretionary sp
 
 $$E[Value] = Discretionary Spending * P(Vote|State)$$
 
-We can then plot this value for each presidency term from 1976 to 2016 for a given state and agency to find the expected value of a vote. As can be seen in the plot below, the expected value of a single vote in Virginia for the 2008 presidency was greater than $35,000 towards the Department of Education. This is an incredibly large amount a single vote holds and shows just how much power a single vote can contribute. 
+First we filter by state and find the probability of one vote turning an election for that state:
 
-```{r }
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 gov_agencies <- c("Department of Education", "Department of Transportation")
 chosen_state <- "VA"
 influence %>% filter(state == chosen_state)
+```
+
+We can then plot this value for each presidency term from 1976 to 2016 for a given state and agency to find the expected value of a vote. As can be seen in the plot below, the expected value of a single vote in Virginia for the 2008 presidency was greater than $35,000 towards the Department of Education. This is an incredibly large amount a single vote holds and shows just how much power a single vote can contribute. 
+
+```{r }
+
 line_data <- (influence %>% filter(state == chosen_state) %>% 
       .$chance * budg_admin *1e6) %>% 
       .[gov_agencies,] %>% 
@@ -621,7 +636,7 @@ p <- scatter_data %>%
 
 p
 ```
-For 2016 presidential election, there is definite negative correlation between voters turnout and vote margin results for each state. We will now fit a logistic regression model with linear covariates on historical data for which states were competitive in past presidential elections. The covariates in our regression include US Census variables for these states as well as the election year and voters turnout data for these states.
+For 2016 presidential election, there is definite negative correlation between voters turnout and vote margin results for each state. We will now fit a logistic regression model with linear covariates on historical data for which states were competitive in past presidential elections. The covariates in our regression include US Census variables for these states as well as the election year and voters turnout data for these states. We use election data starting from 2000, as we did not believe that data before this point was representative of possible swing states.
 
 ```{r Regression, fig.width=5,fig.asp = 0.95}
 #Setting up Data:
@@ -672,13 +687,8 @@ roc_df %>%
   ylab("Specificity")
 print(auc(roc.1))
 
-# plan B: value of your vote based on year and sector in 2024
-# mod <- lm(value ~ year + sector) # plan B
-# mod <- lm(value ~ . - value - state - nonwhite_pct, data = drop_na(full_set))
-# summary(mod)
-#residuals(mod)
 ```
-We achieve 0.9 for the AUC of our ROC Curve, which means our classifier fitted pretty well onto the dataset. Upon looking at the summary of our regression output, only voters turnout seems to be a significant predictor in predicting if the state would be competitive or not at the 0.05 level. The US Census variables were not as helpful and neither was the year. Now we can forecast into 2024 on which state will be competitive.
+We achieve 0.9 for the AUC of our ROC Curve, which means our classifier fitted pretty well onto the dataset. The US Census variables were not as helpful and neither was the year. Now we can forecast into 2024 on which state will be competitive.
 
 ```{r election forcast}
 
