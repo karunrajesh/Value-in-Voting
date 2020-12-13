@@ -101,76 +101,81 @@ colnames(budg_admin) <- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])
 
 
 
-
 state_choices <- unique(presidential_turnout$state)
 govagency_choices <- rownames(budg_admin)
 map_modes <- c('Race Result','Margins','Voter Turnout')
 
 color_scale_min <- c('Margins'= min(margin_pres$margin),'Voter Turnout'=min(presidential_turnout$turnout))
 color_scale_max <- c('Margins'= max(margin_pres$margin),'Voter Turnout'=max(presidential_turnout$turnout))
+party_color_scale <- c("Democrat"="#377eb8","Republican"="#e41a1c","Democratic-Farmer-Labor"="#4daf4a")
 
-agencies <- c("DOE","DOJ")
+# All writings 
+heatmap_writing <- "It is almost universally expected that any visualization panel for election data should use  a US heatmap to demonstrate high-level and geospatial trends. We also think that this is the best way to communicate the overall trends in turnout, margins of victory, and the result of the election for each state. Users can pick the year of choice and whether they wanted to display the turnout, margin of victory, or result for each state."
+voter_turnout_lineplot_writing <- "We first wanted to explore trends in voter turnout over time. The plot belows show voter turnout by state from 1976 to 2016.  Users can select up to six states to display the voter turnout. We opted to show voter turnout percentage over total number of votes from each state using the dataset provided by the United States Election Project for easier comparision between states with very different population counts (for example, between California and Oklahoma."
+influence_gelman_writing <- "Andrew Gelman published multiple papers and articles that used statistical models to find the chance a single vote would swing an election. This served as our main launching point for finding the value in a vote. By equating this probability to each person's individual vote, we can start to answer how much value is in a vote. For instance, in the graph below we can see that a singular vote in Nevada (5 in 10 million) has a much higher chance of swinging an election as compared to Wyoming, which is almost 0 (1 in 30 billion). Thus the value of that singular vote in Nevada can be considered to be much higher than in Wyoming. We then extend this idea into our next section where we discuss the monetary value of a vote."
+margin_writing <- "We then looked at the margin of victory for each state. With this, we hoped to show how some states, such as Oklahoma and Wyoming were strongholds that had large margins of victory, whereas, other states such as New Hampshire were closer in margin. We also wanted to see what trends existed in these margins over time. What have the margins been like over time for a battleground state as compared to a stronghold state."
+budget_writing <-"When understanding the value of a vote, we thought to first find out the money spent during a president's term. This comes in the form of discretionary spending, which is allocated by a plan proposed by the president that is then approved. The reasoning behind this is so users could better understand where their vote was going. To calculate the actual monetary value of a vote, given the discretionary spending during a president's term and the probability of a singular vote in a given state, the expected value of the vote is equal to:
+E[Value] = Discretionary Spending * P(Vote|State)"
+virgina_value_comment_writing <- "We can then plot this value for each presidency term from 1976 to 2016 for a given state and agency to find the expected value of a vote. As can be seen in the plot below, the expected value of a single vote in Virginia for the 2008 presidency was greater than $35,000 towards the Department of Education. This is an incredibly large amount a single vote holds and shows just how much power a single vote can contribute."
+bubbleplot_writing<- "We start by visually assessing the relationship between vote margins and voter turnout each state using a bubble plot, where the size of the bubble is represented by the number of electoral votes that state have. Since the 2000 election onwards, there is an emerging pattern where  voters turnout and vote margin results for each state are negatively correlated. We will leverage this relationship to forecast competitive states for the 2024 presidential election."
 
 ui <- fluidPage(
   theme = shinythemes::shinytheme("spacelab"),
   titlePanel("Value of Voting"),
-  tabsetPanel(
-    tabPanel("EDA",
-             # US map plots
-             column(3,
-                radioButtons("mapmode","Select variable to display:",
-                             choices=map_modes
-                )
-             ),
-             column(9,
-                sliderInput("year","Choose year",
-                            value = 2000, min = 1976, 
-                            max = 2016,step=4,sep="",width='80%'
-                ),
-                plotOutput(outputId = "election_map",height=500,width='100%'),
-                align='center'
-             ),
-             selectizeInput("states_turnout","Select up to 6 states:",
-                            choices=state_choices,
-                            selected=c('California', 'Alabama', 'Michigan', 'Florida','Virginia'),
-                            multiple = T,
-                            options = list(maxItems = 6),
-                            width='100%'
-                            ),
-             column(6,
-                   plotOutput(outputId = "line_turnout",height=500,width='100%')
-                   ),
-             column(6,
-                    plotOutput(outputId = "bar_influence",height=500,width='100%')
-                    ),
-             h4("States Demographic"),
-             tableOutput('table_demo'),
-             column(6,
-                  selectInput("states_margin","Select state:",setNames(state_choices,state_choices)),
-                  plotOutput(outputId = "line_margin",height=500,width='100%')
-             ,align='center'),
-             column(6,
-                    selectizeInput("gov_agencies","Select up to 6 agencies:",
-                                   choices=govagency_choices,
-                                   selected=c("Department of Education", "Department of Transportation"),
-                                   multiple = T,
-                                   options = list(maxItems = 6),
-                                   width='100%'
-                    ),
-                    plotOutput(outputId = "line_votevalue",height=500,width='100%')
-             ),
-             sliderInput("year_scatter","Choose year",
-                         value = 2000, min = 1976, 
-                         max = 2016,step=4,sep="",width='85%'
-             ),
-             plotOutput(outputId = "scatter",height=700,width='100%')
+   # US map plots
+   p(heatmap_writing),
+   column(3,
+      radioButtons("mapmode","Select variable to display:",
+                   choices=map_modes
+      )
+   ),
+   column(9,
+      sliderInput("year","Choose year",
+                  value = 2000, min = 1976, 
+                  max = 2016,step=4,sep="",width='80%'
+      ),
+      plotOutput(outputId = "election_map",height=500,width='100%'),
+      align='center'
+   ),
+   p(voter_turnout_lineplot_writing),
+   p(influence_gelman_writing),
+   selectizeInput("states_turnout","Select up to 6 states:",
+                  choices=state_choices,
+                  selected=c('California', 'Oklahoma', 'Nevada', 'Wyoming','Florida','Virginia'),
+                  multiple = T,
+                  options = list(maxItems = 6),
+                  width='100%'
+                  ),
+   column(6,
+         plotOutput(outputId = "line_turnout",height=500,width='100%')
+         ),
+   column(6,
+          plotOutput(outputId = "bar_influence",height=500,width='100%')
+          ),
+   p(margin_writing),
+   p(budget_writing),
+   column(6,
+        selectInput("states_margin","Select state:",setNames(state_choices,state_choices),selected="Virginia"),
+        plotOutput(outputId = "line_margin",height=500,width='100%')
+   ,align='center'),
+   column(6,
+          selectizeInput("gov_agencies","Select up to 6 agencies:",
+                         choices=govagency_choices,
+                         selected=c("Department of Education", "Department of Transportation"),
+                         multiple = T,
+                         options = list(maxItems = 6),
+                         width='100%'
+          ),
+          plotOutput(outputId = "line_votevalue",height=500,width='100%')
+   ),
+   p(virgina_value_comment_writing),
+   p(bubbleplot_writing),
+   sliderInput("year_scatter","Choose year",
+               value = 2000, min = 1976, 
+               max = 2016,step=4,sep="",width='85%'
+   ),
+   plotOutput(outputId = "scatter",height=700,width='100%')
              
-    ),
-    tabPanel("Analysis",
-             # Regression Output
-             plotOutput(outputId = "analysis",height=700,width='100%')
-    )
-  )
 )
 
 
@@ -213,7 +218,7 @@ server <- function(input, output) {
                                      limits= c(color_scale_min[input$mapmode],color_scale_max[input$mapmode])
        ) + theme(legend.key.width = unit(6,"lines"))
      } else {
-        p <- p + scale_fill_manual(values=c("Democrat"="blue","Republican"="red","Democratic-Farmer-Labor"="darkgreen"))
+        p <- p + scale_fill_manual(values=party_color_scale)
       }
      p
   })
@@ -258,7 +263,7 @@ server <- function(input, output) {
       ggplot(aes(year,margin)) + 
       geom_line() +
       geom_point(aes(colour = party), size = 5) +
-      scale_color_manual(values=c("Democrat"="blue","Republican"="red","Democratic-Farmer-Labor"="darkgreen")) +
+      scale_color_manual(values=party_color_scale) +
       ggtitle('Vote Margin') +
       theme(text = element_text(size=15),
             legend.position="bottom",
