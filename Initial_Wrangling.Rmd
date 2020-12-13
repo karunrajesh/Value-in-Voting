@@ -565,8 +565,7 @@ write.csv(electoral_votes,'Data/Electoral_Votes_by_State.csv',row.names=F)
 ## ML Analysis
 
 ```{r Regression, eval=FALSE, include=FALSE}
-# 3 variables: Year, Sector, State
-library(caret)
+library(pROC)
 #Setting up Data:
 # Calc expected value of vote by state by sector
 full_set <- budg_admin %>% 
@@ -581,24 +580,33 @@ full_set <- full_set %>%
   mutate(state=recode(state,!!!state_name_to_abb)) %>%
   left_join(demo,by='state')
 
-# Put in voter_turnout
-
-vars <- c("year")
-featurePlot(x = full_set[vars], 
-            y = full_set$value, 
-            plot = "scatter",
-            type = c("p", "smooth"),
-            span = .5,
-            layout = c(3, 1))
+# Put in vote margins
+full_set <- full_set %>% mutate(year=as.numeric(year)) %>%
+  left_join(margin_pres,by=c('year','state')) %>% 
+  left_join(presidential_turnout,by=c('year','state'))
+head(margin_pres)
+# make swing state
+full_set <- full_set %>% mutate(swing_state = margin<= .01)
 
 #plan A predict swing state in 2024
 #swing state: vote_margin < .0001
 # predictors: census variables, year (numeric), electoral votes
+set_in <- full_set %>% select(-sector, - value) %>% unique()
+swing_clf<- glm(swing_state ~ . - swing_state - state -margin - party - white_pct,family=binomial(),data=set_in)
+summary(swing_clf)
+
+roc.1 <- roc(drop_na(set_in)$swing_state, fitted(swing_clf))
+#fitted_vals<-fitted(swing_clf)
+#plot(roc.1,col='red',xlim=c(1,0))
+roc_df <- as.data.frame(cbind(roc.1$sensitivities,roc.1$specificities))
+names(roc_df) <- c('sensitivity','specificity')
+roc_df %>% arrange(desc(sensitivity),desc(specificity))
+roc_df %>% ggplot(aes(specificity,sensitivity)) + geom_line(color='darkred') + geom_abline(aes(slope=1,intercept=1),linetype='dashed') + xlim(1,0)
 
 # plan B: value of your vote based on year and sector in 2024
-mod <- lm(value ~ year + sector) # plan B
-mod <- lm(value ~ . - value - state - nonwhite_pct, data = drop_na(full_set))
-summary(mod)
+# mod <- lm(value ~ year + sector) # plan B
+# mod <- lm(value ~ . - value - state - nonwhite_pct, data = drop_na(full_set))
+# summary(mod)
 #residuals(mod)
 ```
 
