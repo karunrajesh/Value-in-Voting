@@ -672,7 +672,7 @@ print(auc(roc.1))
 # summary(mod)
 #residuals(mod)
 ```
-We achieve 0.8 for the AUC of our ROC Curve, which means our classifier fitted pretty well onto the dataset. Upon looking at the summary of our regression output, only voters turnout seems to be a significant predictor in predicting if the state would be competitive or not at the 0.05 level. The US Census variables were not as helpful and neither was the year. Now we can forecast into 2024 on which state will be competitive.
+We achieve 0.9 for the AUC of our ROC Curve, which means our classifier fitted pretty well onto the dataset. Upon looking at the summary of our regression output, only voters turnout seems to be a significant predictor in predicting if the state would be competitive or not at the 0.05 level. The US Census variables were not as helpful and neither was the year. Now we can forecast into 2024 on which state will be competitive.
 
 ```{r election forcast}
 
