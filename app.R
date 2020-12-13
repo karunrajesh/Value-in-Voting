@@ -119,6 +119,12 @@ E[Value] = Discretionary Spending * P(Vote|State)"
 virgina_value_comment_writing <- "We can then plot this value for each presidency term from 1976 to 2016 for a given state and agency to find the expected value of a vote. As can be seen in the plot below, the expected value of a single vote in Virginia for the 2008 presidency was greater than $35,000 towards the Department of Education. This is an incredibly large amount a single vote holds and shows just how much power a single vote can contribute."
 bubbleplot_writing<- "We start by visually assessing the relationship between vote margins and voter turnout each state using a bubble plot, where the size of the bubble is represented by the number of electoral votes that state have. Since the 2000 election onwards, there is an emerging pattern where  voters turnout and vote margin results for each state are negatively correlated. We will leverage this relationship to forecast competitive states for the 2024 presidential election."
 
+
+
+vote_value_df <- (influence %>%  .$chance * budg_admin *1e6) %>% tibble::rownames_to_column("agency") %>%  gather(year,budget,-agency) 
+vote_value_scale <- c(min(vote_value_df$budget),1e6)
+
+
 ui <- fluidPage(
   theme = shinythemes::shinytheme("spacelab"),
   titlePanel("Value of Voting"),
@@ -218,7 +224,7 @@ server <- function(input, output) {
                                      limits= c(color_scale_min[input$mapmode],color_scale_max[input$mapmode])
        ) + theme(legend.key.width = unit(6,"lines"))
      } else {
-        p <- p + scale_fill_manual(values=party_color_scale)
+        p <- p + scale_fill_manual(name='Winning Party',values=party_color_scale)
       }
      p
   })
@@ -229,7 +235,10 @@ server <- function(input, output) {
       ggplot(aes(year,turnout,color=state)) + 
       geom_line() +
       geom_point() +
-      ggtitle("Voter Turnout") + 
+      ggtitle("Voter Turnout Over Time") +
+      xlab("Year") + 
+      ylab("Voter Turnout Percentage") + 
+      scale_color_discrete(name="State") +
       theme(text = element_text(size=15),
             legend.position="bottom",
             # center title
@@ -243,7 +252,10 @@ server <- function(input, output) {
     bar_influence_data() %>%
       ggplot(aes(state, chance,fill=state)) +
       geom_bar(stat="identity") +
-      ggtitle("Chance of Flipping an Election") +
+      ggtitle("Chance of Flipping an Election by State") +
+      ylab("Probability that Your Vote Would Flip the Election") +
+      xlab("State") + 
+      scale_color_discrete(name="State") +
       theme(text = element_text(size=15),
             legend.position="bottom",
             # center title
@@ -263,7 +275,9 @@ server <- function(input, output) {
       ggplot(aes(year,margin)) + 
       geom_line() +
       geom_point(aes(colour = party), size = 5) +
-      scale_color_manual(values=party_color_scale) +
+      scale_color_manual(name="Winning Party",values=party_color_scale) +
+      ylab("Winning Margin as Percentage of Votes") +
+      xlab("Year") + 
       ggtitle('Vote Margin') +
       theme(text = element_text(size=15),
             legend.position="bottom",
@@ -284,6 +298,7 @@ server <- function(input, output) {
       geom_line() +
       xlab("Year") + 
       ylab("Value of Vote (in dollars)") +
+      scale_y_log10(limits=c(vote_value_scale[1],vote_value_scale[2])) + 
       ggtitle('Value of Vote') +
       theme(text = element_text(size=15),
             legend.position="bottom",
@@ -309,7 +324,6 @@ server <- function(input, output) {
       # Make the legend titles nicer
       scale_color_manual(values=c("Democrat"="blue","Republican"="red","Democratic-Farmer-Labor"="darkgreen")) +
       scale_size_continuous(name = "# of Electoral Votes",range=c(5,30)) +
-      
       # Change the title of the plot for each year
       # Returns a character vector containing a formatted combination 
       # of text and variable values
