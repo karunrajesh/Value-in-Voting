@@ -227,22 +227,28 @@ head(presidential)</code></pre>
 </div>
 <p>We then took the presidential and senate dataset and subset it into various other datasets. The dataframe below holds the voter turnout over time, aggregated by state and year.</p>
 <pre class="r"><code>#Voter Turnout Over Time
+
+# Aggregate Senate by state
 senate_turnout &lt;- senate %&gt;%
   group_by(year, state) %&gt;%
   filter(row_number()==1) %&gt;%
   dplyr::select(year, state, totalvotes)
+
+# Aggregate Presidential Election by state
 presidential_turnout &lt;- presidential %&gt;%
   group_by(year, state) %&gt;%
   filter(row_number()==1) %&gt;%
   dplyr::select(year, state, totalvotes)</code></pre>
 <p>The dataframe below holds the margin of victory for each presidential race, aggregated by state and year.</p>
 <pre class="r"><code>#Margins of Victory
+
+# Aggregate Presidential Election by state
 margin_pres &lt;- presidential %&gt;%
   group_by(year,state) %&gt;%
   arrange(desc(candidatevotes), .by_group = TRUE) %&gt;%
-  filter(row_number() %in% c(1,2)) %&gt;%
+  filter(row_number() %in% c(1,2)) %&gt;% # Get top 2 candidates
   dplyr::select(year, state, candidate, candidatevotes, totalvotes, party) %&gt;%
-  summarize(margin = mean((candidatevotes[1]-candidatevotes[2])/totalvotes), party = party[1])
+  summarize(margin = mean((candidatevotes[1]-candidatevotes[2])/totalvotes), party = party[1]) #Take difference between candidates and divide by total votes
 
 margin_sen &lt;- senate %&gt;%
   group_by(year,state) %&gt;%
@@ -252,10 +258,12 @@ margin_sen &lt;- senate %&gt;%
   summarize(margin = mean((candidatevotes[1]-candidatevotes[2])/totalvotes), party = party[1])</code></pre>
 <p>The dataframe below holds the party that won for each presidential race, aggregated by state and year.</p>
 <pre class="r"><code># Switching Parties
+
+# Aggregate Presidential Election by state
 parties_pres &lt;- presidential %&gt;%
   group_by(year,state) %&gt;%
   arrange(desc(candidatevotes), .by_group = TRUE) %&gt;%
-  filter(row_number() == 1) %&gt;%
+  filter(row_number() == 1) %&gt;% # Get the winner for the given state
   dplyr::select(year, state, candidate, party)
 parties_sen &lt;- senate %&gt;%
   group_by(year,state) %&gt;%
@@ -271,10 +279,11 @@ head(context)</code></pre>
   </script>
 </div>
 <p>We then aggregated this demographic data by state, as it was currently separated by county.</p>
-<pre class="r"><code>context_state&lt;- context %&gt;%
+<pre class="r"><code># Aggregate Demographics by state
+context_state&lt;- context %&gt;%
   group_by(state) %&gt;%
-  dplyr::select(-county) %&gt;%
-  summarise_each(funs(mean))</code></pre>
+  dplyr::select(-county) %&gt;% # Get rid of county variable
+  summarise_each(funs(mean)) # Get mean within each county</code></pre>
 </div>
 <div id="white-house-office-of-management-and-budget" class="section level4">
 <h4>White House Office of Management and Budget</h4>
@@ -282,17 +291,17 @@ head(context)</code></pre>
 <p>We aggregated this data over each president’s term to get the total discretionary spending per term. This was then used to find the monetary value of one person’s vote in a given state for the given election year.</p>
 <pre class="r"><code># Contains the mandatory federal spending per year per agency
 budg_all &lt;- read.csv(&quot;Data/budget_amount.csv&quot;)
-budg_all &lt;- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE)
+budg_all &lt;- data.frame(lapply(budg_all, as.character), stringsAsFactors=FALSE) # Convert factor columns to character
 colnames(budg_all) = budg_all[2,]
 rownames(budg_all) = budg_all[,1]
 budg_all = budg_all[-c(1,2,33,34),-1]
 cols &lt;- colnames(budg_all)
 rows &lt;- rownames(budg_all)
-budg = as.data.frame(lapply(budg_all, function(x) as.numeric(gsub(&quot;,&quot;,&quot;&quot;,x))))
+budg = as.data.frame(lapply(budg_all, function(x) as.numeric(gsub(&quot;,&quot;,&quot;&quot;,x)))) # Take out comma in numerical values
 colnames(budg) &lt;- cols
 rownames(budg) &lt;- rows
 budg &lt;- budg[,-c(1,2)]
-budg_admin &lt;- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE)))
+budg_admin &lt;- as.data.frame(sapply(seq(1,dim(budg)[2]-1,by=4),function(i) rowSums(budg[,i:(i+3)], na.rm=TRUE))) # Aggregate each of the president's discretionary budget in their four years of presidency
 colnames(budg_admin) &lt;- c(as.numeric(colnames(budg[,seq(1,dim(budg)[2]-5,by=4)])) - 1, 2020)
 
 head(budg_admin)</code></pre>
@@ -308,12 +317,12 @@ head(budg_admin)</code></pre>
 <pre class="r"><code>check &lt;- read.csv(&quot;Data/Turnout.csv&quot;)
 check &lt;- check %&gt;%
   filter(X %in% seq(1976, 2016, by = 4)) %&gt;%
-  filter(State != &quot;United States&quot;) %&gt;%
+  filter(State != &quot;United States&quot;) %&gt;% # Remove United States from the dataset
   select(X, State, X.4)
 colnames(check) &lt;- c(&quot;Year&quot;, &quot;State&quot;, &quot;Turnout&quot;)
 check$Year &lt;- as.numeric(as.character(check$Year))
 total_turnout &lt;- check
-total_turnout$Turnout &lt;- as.numeric(gsub(&quot;%&quot;,&quot;&quot;,total_turnout$Turnout))
+total_turnout$Turnout &lt;- as.numeric(gsub(&quot;%&quot;,&quot;&quot;,total_turnout$Turnout)) # Remove the % in turnout
 head(total_turnout)</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
@@ -330,6 +339,9 @@ head(total_turnout)</code></pre>
 </div>
 <p>These were separated by states, with battleground states having higher values, Wisconsin with a 1 in 2 million chance, and dominant states having lower values, Oklahoma with a 1 in 30 billion chance. We used the probability of influencing an election, along with the discretionary budget data, to find the monetary value of a vote based on state and year. It should be noted that we do not replicate Gelman’s statistical models over each election year and utilize just one election year for our analysis.</p>
 <pre class="r"><code>#Adapted from: https://slate.com/news-and-politics/2016/11/here-are-the-chances-your-vote-matters.html
+# The table was an image, so we had to manually input all values
+# We obtained all state abbreviations with state.abb
+
 influence = data.frame(state = c(state.abb), 
                        chance = c(1/7e9,1/100e6,1/40e6, 1/3e9,
                                  1/7e9,1/1e6, 1/40e6, 1/300e6,
@@ -343,34 +355,24 @@ influence = data.frame(state = c(state.abb),
                                  1/40e6, 1/2e6, 1/30e6, 1/100e6,
                                  1/3e9, 1/3e9, 1/1e9, 1/2e9,
                                  1/10e9, 1/10e6, 1/200e6, 1/9e9,
-                                 1/2e6, 1/30e9))
-
-
-va &lt;- influence %&gt;%
-  filter(state == &quot;VA&quot;)
-va_example &lt;- budg_admin * va$chance * 1e6</code></pre>
+                                 1/2e6, 1/30e9))</code></pre>
 </div>
 <div id="web-scraping" class="section level4">
 <h4>Web Scraping</h4>
 <p>We web scraped several other datasets to fill in gaps found throughout the process. One of these was the voter turnout from 2016. This was obtained by scraping a table from sos.nh.gov that contained voter turnout in the year 2016. Various other datasets that showed differences in administration’s proposed budgets were also web scraped from <a href="https://www.thebalance.com/" class="uri">https://www.thebalance.com/</a> . This site contains the breakdown of discretionary spending per year, and contains tables comparing President Trump to President Obama’s (2012) proposed budgets. We also scraped data from govinfo.gov that contained data comparing President Bush’s and President Obama’s (2008) proposed budget. We realized that it would not be efficient to download each year as a separate web scraped table, so we replaced these with the White House OMB data.</p>
 <pre class="r"><code># Web Scraping, NOT USED SINCE OMB HAS SAME INFORMATION
+
+# Clean table obtained from web scraping
 clean_table &lt;- function(df){
   rownames(df) &lt;- df[,1]
   df[,1] &lt;- NULL
   colnames(df) &lt;- df[1,]
   df &lt;- df[-1,]
 } 
-get_table &lt;- function(url, i){
-  h1 &lt;- read_html(url)
-  try &lt;- h1 %&gt;% html_nodes(&quot;table&quot;) %&gt;% .[i]
-  budget &lt;- try %&gt;% html_table %&gt;% .[[1]] 
-  budget &lt;- clean_table(budget)
-  return(budget)
-}
 
+# Compares the Obama and Trump Discretionary Budget Proposals
 turl &lt;- &quot;https://www.thebalance.com/how-trump-amended-obama-budget-4128986&quot;
 h   &lt;- read_html(turl)
-tab &lt;- h %&gt;% html_nodes(&quot;table&quot;)
 try &lt;- h %&gt;% html_nodes(&quot;table&quot;) %&gt;% .[1]
 budget_comp &lt;- try %&gt;% html_table %&gt;% .[[1]] 
 
@@ -388,25 +390,27 @@ head(budget_comp)</code></pre>
   </script>
 </div>
 <p>In order to find the full voter turnout from 1976 to 2016 presidential elections, we had to web scrape the voter turnout for the 2016 election. We then manually input the data for the 1976 presidential election voter turnout.</p>
-<pre class="r"><code>location &lt;- 'https://sos.nh.gov/media/ni0j3zb5/1976-2016-presidental-election-highest-office-divided-by-vap.pdf'
+<pre class="r"><code># Get the 2016 table from the pdf
+location &lt;- 'https://sos.nh.gov/media/ni0j3zb5/1976-2016-presidental-election-highest-office-divided-by-vap.pdf'
 out &lt;- extract_tables(location)
 df &lt;- out[[2]]
 final &lt;- as.data.frame(df)
 final &lt;- final[,-c(1,4,7,10,13,16)]
-final &lt;- data.frame(lapply(final, as.character), stringsAsFactors=FALSE)
+final &lt;- data.frame(lapply(final, as.character), stringsAsFactors=FALSE) # Conver factor to character
 colnames(final) &lt;- final[1,]
 final &lt;- final[-1,]
 
 final &lt;- final[,c(11,12)]
 final &lt;- final %&gt;%
-  filter(`2016` != &quot;United States&quot;)
+  filter(`2016` != &quot;United States&quot;) # Remove United States from the dataset
 final$X &lt;- 2016
 final &lt;- final[,c(3,1,2)]
 colnames(final) &lt;- c(&quot;Year&quot;, &quot;State&quot;, &quot;Turnout&quot;)
 final$Year &lt;- as.numeric(final$Year)
 
-write.csv(final,&quot;Data/2016_Turnout.csv&quot;,row.names=F)
+write.csv(final,&quot;Data/2016_Turnout.csv&quot;,row.names=F) #Write csv to the Data folder
 
+# Manually put in the 1976 voter turnout, since could not parse the file 
 old_turnout &lt;- data.frame(State = c(&quot;Minnesota&quot;, &quot;Utah&quot;, &quot;North Dakota&quot;, &quot;Wisconsin&quot;, &quot;South Dakota&quot;, &quot;Maine&quot;, &quot;Montana&quot;, &quot;Iowa&quot;, &quot;Conneticut&quot;, &quot;Massachusetts&quot;, &quot;Oregon&quot;, &quot;Idaho&quot;, &quot;Indiana&quot;, &quot;Washington&quot;, &quot;Rhode Island&quot;, &quot;Illinois&quot;, &quot;Colorado&quot;,&quot;Kansas&quot;, &quot;Michigan&quot;,&quot;Wyoming&quot;,&quot;New Jersey&quot;,&quot;Missouri&quot;, &quot;New Hampshire&quot;,&quot;Delaware&quot;,&quot;West Virginia&quot;, &quot;Nebraska&quot;,&quot;Vermont&quot;,&quot;Ohio&quot;,&quot;Oklahoma&quot;, &quot;Pennsylvania&quot;, &quot;New Mexico&quot;,&quot;Arkansas&quot;,&quot;New York&quot;, &quot;California&quot;,&quot;Maryland&quot;,&quot;Florida&quot;,&quot;Louisiansa&quot;, &quot;Tennessee&quot;,&quot;Alaska&quot;,&quot;Mississippi&quot;,&quot;Kentucky&quot;, &quot;Virginia&quot;,&quot;Hawaii&quot;,&quot;Texas&quot;,&quot;Alabama&quot;,&quot;Arizona&quot;,&quot;Nevada&quot;,&quot;North Carolina&quot;,&quot;Georgia&quot;,&quot;South Carolina&quot;, &quot;District of Columbia&quot;), Turnout = c(71.5, 68.4, 67.2, 66.5, 64.1, 63.6, 63.3, 
                        63.1, 62.7, 61.6, 61.3, 60.6, 60.1, 59.8,
                        59.6, 59.4, 58.8, 58.8, 58.8, 58.5, 57.7, 
@@ -420,7 +424,7 @@ old_turnout &lt;- old_turnout[,c(3,1,2)]
 
 write.csv(old_turnout,&quot;Data/1976_Turnout.csv&quot;,row.names=F)
 
-total_turnout &lt;- rbind(total_turnout, old_turnout)
+total_turnout &lt;- rbind(total_turnout, old_turnout) #Append the dataframes together
 
 
 # how we are reading turnout in shiny app, 
@@ -429,8 +433,9 @@ turnout &lt;- read.csv(&quot;Data/Turnout.csv&quot;) %&gt;%
   select(X, State, X.4) %&gt;% 
   rename(year=X,state=State, turnout=X.4)
 turnout_1976 &lt;- read.csv(&quot;Data/1976_Turnout.csv&quot;)
-turnout_2016 &lt;- read.csv(&quot;Data/2016_Turnout.csv&quot;) %&gt;% mutate(State=recode(State,!!!c(&quot;Dist. of Columbia&quot;=&quot;District of Columbia&quot;)))
+turnout_2016 &lt;- read.csv(&quot;Data/2016_Turnout.csv&quot;) %&gt;% mutate(State=recode(State,!!!c(&quot;Dist. of Columbia&quot;=&quot;District of Columbia&quot;))) 
 
+#Append the dataframes fully
 pr_turnout &lt;- turnout_1976 %&gt;% 
   rename(year=Year,state=State,turnout=Turnout) %&gt;% rbind(turnout) %&gt;% 
   rbind(turnout_2016 %&gt;% rename(year=Year,state=State,turnout=Turnout)) %&gt;%
@@ -463,7 +468,7 @@ head(pr_turnout)</code></pre>
 <div id="demographics" class="section level4">
 <h4>Demographics</h4>
 <p>Here we show the demographics for the 2016 election:</p>
-<pre class="r"><code># Demographics, 2016 Election, show as table 
+<pre class="r"><code># Demographics, 2016 Election
 demo &lt;- context_state[,-c(2:22)]
 demo &lt;- demo %&gt;%
   filter(!state %in% c(&quot;Missouri&quot;, &quot;Virginia&quot;, &quot;South Dakota&quot;))
@@ -503,7 +508,7 @@ presidential_turnout &lt;- turnout_1976 %&gt;%
   filter(state !='United States')
 
 presidential_turnout %&gt;%
-  filter(state == &quot;Virginia&quot;) %&gt;%
+  filter(state == &quot;Virginia&quot;) %&gt;% # Show example for one state
   ggplot(aes(year,turnout)) + 
   ggtitle(&quot;Voter Turnout in Virginia&quot;) + 
   ylab(&quot;Voter Turnout (Percentage)&quot;) + 
@@ -528,7 +533,7 @@ margin_pres %&gt;%
 <div id="chance-of-influencing-a-single-election" class="section level4">
 <h4>Chance of Influencing a Single Election</h4>
 <p>Andrew Gelman published multiple papers and articles, as detailed above, that used statistical models to find the chance a single vote would swing an election. This served as our main launching point for finding the value in a vote. By equating this probability to each person’s individual vote, we can start to answer how much value is in a vote. For instance, in the graph below we can see that a singular vote in Nevada (5 in 10 million) has a much higher chance of swinging an election as compared to Wyoming, which is almost 0 (1 in 30 billion). Thus the value of that singular vote in Nevada can be considered to be much higher than in Wyoming. We then extend this idea into our next section where we discuss the monetary value of a vote.</p>
-<pre class="r"><code># Chance of influencing the election, based on 2012 results, # NEEDS INFLUENCE TABLE BELOW
+<pre class="r"><code># Chance of influencing the election, based on 2012 results
 # Show 5-6 states
 influence$chance &lt;- as.numeric(influence$chance)
 influence %&gt;%
@@ -547,7 +552,8 @@ influence %&gt;%
   </script>
 </div>
 <p>From the graph below, we can see that Department of Education’s allocated budget increased much faster compared to the Department of Transportation’s. We can also see a sharp increase in the Department of Education in 2008, or President Obama’s first term.</p>
-<pre class="r"><code>gov_agencies &lt;- c(&quot;Department of Education&quot;, &quot;Department of Transportation&quot;)
+<pre class="r"><code># Show the discretionary spending for the given government agencies
+gov_agencies &lt;- c(&quot;Department of Education&quot;, &quot;Department of Transportation&quot;)
 line_data &lt;- budg_admin %&gt;% 
   .[gov_agencies,] %&gt;% 
   tibble::rownames_to_column(&quot;agency&quot;) %&gt;% 
@@ -577,7 +583,8 @@ line_data %&gt;%
   </script>
 </div>
 <p>We can then plot this value for each presidency term from 1976 to 2016 for a given state and agency to find the expected value of a vote. As can be seen in the plot below, the expected value of a single vote in Virginia for the 2008 presidency was greater than $35,000 towards the Department of Education. This is an incredibly large amount a single vote holds and shows just how much power a single vote can contribute.</p>
-<pre class="r"><code>line_data &lt;- (influence %&gt;% filter(state == chosen_state) %&gt;% 
+<pre class="r"><code># Show the value of a vote for the given agencies
+line_data &lt;- (influence %&gt;% filter(state == chosen_state) %&gt;% 
       .$chance * budg_admin *1e6) %&gt;% 
       .[gov_agencies,] %&gt;% 
       tibble::rownames_to_column(&quot;agency&quot;) %&gt;%
