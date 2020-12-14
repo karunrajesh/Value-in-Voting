@@ -1,13 +1,11 @@
 ---
-title: "R Notebook"
+title: "Value in Voting"
+author: "Karun Rajesh, Han Truong, Davy Deng"
 output:
   html_document:
     df_print: paged
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
 
 ```{r include=FALSE}
 library(tidyverse)
@@ -415,7 +413,7 @@ margin_pres %>%
   ggplot(aes(year,margin)) + 
   geom_line() +
   geom_point(aes(colour = party), size = 5) + 
-  ggtitle("Margin of Victory in Virginia")
+  ggtitle("Margin of Victory in Virginia") +
   scale_color_manual(values=c("blue", "red"))
 ```
 
@@ -605,7 +603,7 @@ write.csv(electoral_votes,'Data/Electoral_Votes_by_State.csv',row.names=F)
 
 Now we have all data necessary for our bubble chart:
 
-```{r BubblePlot,out.width='100%',out.height='100%'}
+```{r BubblePlot, message=FALSE, warning=FALSE, out.height='100%', out.width='100%'}
 ### Relationship between  over Time
 electoral_votes <- read.csv('Data/Electoral_Votes_by_State.csv')
 pres_turnout_and_margin <- presidential_turnout %>% 
@@ -643,7 +641,7 @@ p
 ```
 For 2016 presidential election, there is definite negative correlation between voters turnout and vote margin results for each state. We will now fit a logistic regression model with linear covariates on historical data for which states were competitive in past presidential elections. The covariates in our regression include US Census variables for these states as well as the election year and voters turnout data for these states. We use election data starting from 2000, as we did not believe that data before this point was representative of possible swing states.
 
-```{r Regression, fig.width=5,fig.asp = 0.95}
+```{r Regression, fig.asp=0.95, fig.width=5, warning=FALSE}
 # Put in Census variables as features
 # Put in vote margins
 state_name_to_abb <- setNames(state.name,state.abb)
