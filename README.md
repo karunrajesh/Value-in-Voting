@@ -8,6 +8,9 @@ You can download this repo onto your local machine and run the Initial_Wrangling
 
 The necessary data files are located within the Data folder on this repo.
 
+Website: https://sites.google.com/berkeley.edu/valueinvoting/home?authuser=1
+Screencast: https://youtu.be/lBjT9ze8fr4
+
 
 Overview:
 
